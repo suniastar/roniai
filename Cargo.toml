@@ -10,3 +10,4 @@ publish = false
 anyhow = "1.0.102"
 encoding_rs = "0.8.35"
 llama-cpp-2 = { version = "0.1.146", features = ["cuda"] }
+serde_json = "1.0.149"
