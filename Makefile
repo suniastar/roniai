@@ -18,13 +18,13 @@ build: ## Builds a new profiling build
 	cargo build --profiling
 
 test: ## Runs all test suites
-	cargo test-all
+	cargo test --all
 
 fmt: ## Formats the source code
-	cargo fmt-all
+	cargo fmt --all
 
 lint: ## Checks for any syntactic sugar
-	cargo lint-all
+	cargo clippy --all-features --all --tests --examples -- -D clippy::all -D warnings
 
 upgrade: ## Upgrades all project dependencies
 	cargo upgrade --verbose
