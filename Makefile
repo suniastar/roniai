@@ -3,24 +3,34 @@ help:
 	@echo "Available Commands:"
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-download-model: ## Download the required Qwen3.5 model
-	echo todo
+dependencies: ## Installs all optional cargo tools
+	cargo install cargo-edit
+	cargo install cargo-udeps
+	cargo install samply
 
-llama-qwen-35: ## Start the LLM server (Qwen3.5)
-	llama-server \
-		--ctx-size 65536 \
-		--batch-size 2048 \
-		--ubatch-size 2048 \
-		--flash-attn on \
-		--gpu-layers all \
-		--hf-repo unsloth/Qwen3.5-9B-GGUF:Q4_K_M \
-		--seed 42 \
-		--temperature 1.0 \
-		--top_k 20 \
-		--top_p 0.95 \
-		--min_p 0 \
-		--repeat-penalty 1.0 \
-		--presence-penalty 1.5 \
-		--context-shift \
-		--tools get_datetime \
-		--jinja
+build: ## Builds a new debug build
+	cargo build
+
+build: ## Builds a new release build
+	cargo build --release
+
+build: ## Builds a new profiling build
+	cargo build --profiling
+
+test: ## Runs all test suites
+	cargo test-all
+
+fmt: ## Formats the source code
+	cargo fmt-all
+
+lint: ## Checks for any syntactic sugar
+	cargo lint-all
+
+upgrade: ## Upgrades all project dependencies
+	cargo upgrade --verbose
+
+udeps: ## Find unused dependencies
+	cargo +nightly udeps
+
+clean: ## Cleans any intermediate build data
+	cargo clean
