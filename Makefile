@@ -10,21 +10,26 @@ dependencies: ## Installs all optional cargo tools
 
 build: ## Builds a new debug build
 	cargo build
+	npm run build
 
 build-release: ## Builds a new release build
 	cargo build --release
+	npm run build
 
 build-profiling: ## Builds a new profiling build
 	cargo build --profiling
+	npm run build
 
 test: ## Runs all test suites
 	cargo test --all
 
 fmt: ## Formats the source code
 	cargo fmt --all
+	npm run format
 
 lint: ## Checks for any syntactic sugar
 	cargo clippy --all-features --all --tests --examples -- -D clippy::all -D warnings
+	npm run lint
 
 upgrade: ## Upgrades all project dependencies
 	cargo upgrade --verbose
@@ -34,3 +39,4 @@ udeps: ## Find unused dependencies
 
 clean: ## Cleans any intermediate build data
 	cargo clean
+	npm run clean

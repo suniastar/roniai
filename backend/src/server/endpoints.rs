@@ -27,9 +27,10 @@ async fn ws_mrsroni_handle(state: Arc<RwLock<AppState>>, mut socket: WebSocket) 
             }
             Ok(msg) => msg,
         };
-        let text = format!("Send Message Nr. {message}");
+        let text = format!("{message}");
         if let Err(e) = socket.send(Message::Text(text.into())).await {
             warn!("failed to send message via websocket: {e}");
+            break;
         }
     }
 

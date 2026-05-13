@@ -1,0 +1,20 @@
+{
+  "name": "roniai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "preview": "npm run preview --workspaces",
+    "prepare": "npm run prepare --workspaces",
+    "check": "npm run check --workspaces",
+    "check:watch": "npm run check:watch --workspaces",
+    "lint": "npm run link --workspaces",
+    "format": "npm run format --workspaces",
+    "clean": "npm run clean --workspace"
+  }
+}

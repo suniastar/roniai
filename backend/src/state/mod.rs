@@ -16,13 +16,11 @@ impl AppState {
         }
     }
 
-    pub fn send(&mut self, value: u64) -> Result<usize> {
-        if self.broadcast_sender.is_empty() {
-            warn!("no receivers. skip send");
-            return Ok(0);
-        }
-        let n_rx = self.broadcast_sender.send(value)?;
-        Ok(n_rx)
+    pub fn send(&mut self, value: u64) -> usize {
+        self.broadcast_sender.send(value).unwrap_or_else(|e| {
+            warn!("no receivers subscribed: {e}");
+            0
+        })
     }
 
     pub fn subscribe(&self) -> Receiver<u64> {

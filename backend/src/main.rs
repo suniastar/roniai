@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
             loop {
                 c += 1;
                 let mut lock = s.write().await;
-                let n_rx = lock.send(c).expect("failed to send");
+                let n_rx = lock.send(c);
                 drop(lock);
                 info!("send {c} to {n_rx} receivers");
                 sleep(Duration::from_secs(1)).await;
