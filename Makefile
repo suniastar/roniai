@@ -28,3 +28,9 @@ lint: ## Checks for any syntactic sugar
 
 upgrade: ## Upgrades all project dependencies
 	cargo upgrade --verbose
+
+udeps: ## Find unused dependencies
+	cargo +nightly udeps
+
+clean: ## Cleans any intermediate build data
+	cargo clean

@@ -160,6 +160,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "backend"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "clap",
+ "serde",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "twitch_api",
+]
+
+[[package]]
 name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -891,21 +905,6 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
-]
-
-[[package]]
-name = "roniai"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "clap",
- "serde",
- "tokio",
- "tokio-tungstenite",
- "tracing",
- "tracing-subscriber",
- "twitch_api",
 ]
 
 [[package]]
