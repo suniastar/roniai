@@ -1,24 +1,26 @@
 use crate::args::Args;
-use crate::server::WebsocketServer;
-use crate::state::AppState;
+use crate::server::Server;
+use crate::state::{AppState, AppStateInner};
+use crate::websocket::WebsocketClient;
 use anyhow::Result;
 use clap::Parser;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::spawn;
 use tokio::sync::RwLock;
-use tokio::time::sleep;
-use tracing::info;
+use tracing::{error, info};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt::Layer as FmtLayer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
+use twitch_api::eventsub::{Event, Message};
 
 mod args;
 mod init;
 mod server;
 mod state;
+mod twitch;
+mod websocket;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -41,26 +43,12 @@ async fn main() -> Result<()> {
         .try_init()?;
 
     let args = Args::parse();
-    let state = Arc::new(RwLock::new(AppState::new()));
+    let state = AppStateInner::load(&args).await?;
 
-    let handle = {
-        let s = state.clone();
-        spawn(async move {
-            let mut c = 0;
-            loop {
-                c += 1;
-                let mut lock = s.write().await;
-                let n_rx = lock.send(c);
-                drop(lock);
-                info!("send {c} to {n_rx} receivers");
-                sleep(Duration::from_secs(1)).await;
-            }
-        })
-    };
+    // let mut client = WebsocketClient::start();
+    let mut server = Server::start(state, args.port());
 
-    let server = WebsocketServer::new(state, args.port());
-    server.run().await?;
-    handle.abort();
-    handle.await?;
+    server.join().await?;
+    // client.join().await?;
     Ok(())
 }
