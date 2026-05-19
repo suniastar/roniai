@@ -58,7 +58,8 @@ async fn main() -> Result<()> {
                 Some(event) => match event {
                     Event::ChannelChatMessageV1(payload) => match payload.message {
                         Message::Notification(data) => {
-                            let n = server.send(data.message.text);
+                            let id = 42;
+                            let n = server.send_eval(id, data.message.text);
                             info!("send to {n} clients");
                         }
                         _ => {

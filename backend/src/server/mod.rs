@@ -1,4 +1,5 @@
 use crate::server::endpoints::{twitch_callback, twitch_login, ws_mrsroni};
+use crate::server::message::Message;
 use crate::server::session::{LoginSession, ServerSession};
 use crate::state::AppState;
 use anyhow::Result;
@@ -11,6 +12,7 @@ use tokio::task::JoinHandle;
 use tracing::info;
 
 mod endpoints;
+mod message;
 mod session;
 
 #[derive(Debug)]
@@ -29,8 +31,11 @@ impl Server {
         }
     }
 
-    pub fn send(&self, message: String) -> usize {
-        self.session.send(message)
+    pub fn send_eval(&self, id: u64, message: String) -> usize {
+        self.session.send(Message::EvaluatingPrompt {
+            id,
+            prompt: message,
+        })
     }
 
     pub async fn join(&mut self) -> Result<()> {

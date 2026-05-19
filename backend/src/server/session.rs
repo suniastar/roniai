@@ -1,3 +1,4 @@
+use crate::server::message::Message;
 use crate::state::AppState;
 use reqwest::Url;
 use std::sync::Arc;
@@ -70,7 +71,7 @@ pub struct ServerSession {
 
 #[derive(Debug)]
 pub struct ServerSessionInner {
-    sender: Sender<String>,
+    sender: Sender<Message>,
 }
 
 impl ServerSession {
@@ -81,14 +82,14 @@ impl ServerSession {
         }
     }
 
-    pub fn send(&self, value: String) -> usize {
+    pub fn send(&self, value: Message) -> usize {
         self.inner.sender.send(value).unwrap_or_else(|e| {
             warn!("no receivers subscribed: {e}");
             0
         })
     }
 
-    pub fn subscribe(&self) -> Receiver<String> {
+    pub fn subscribe(&self) -> Receiver<Message> {
         self.inner.sender.subscribe()
     }
 }

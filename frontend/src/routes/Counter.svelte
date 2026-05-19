@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Spring } from 'svelte/motion';
 	import { ArrayQueue, ConstantBackoff, WebsocketBuilder } from 'websocket-ts';
+	import { decodeMessage } from '$lib/types/message';
 
 	const count = new Spring(0);
 	const offset = $derived(modulo(count.current, 1));
@@ -18,9 +19,10 @@
 		.onError((i, ev) => {
 			console.log('error', i, ev);
 		})
-		.onMessage((i, ev) => {
-			console.log('message', i, ev);
-			count.target = parseInt(ev.data);
+		.onMessage(async (i, ev) => {
+			let bytes = ev.data;
+			let msg = await decodeMessage(bytes);
+			console.log('message', msg);
 		})
 		.onRetry((i, ev) => {
 			console.log('retry', i, ev);

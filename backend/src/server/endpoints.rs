@@ -166,7 +166,14 @@ async fn ws_mrsroni_handle(session: ServerSession, mut socket: WebSocket) {
             }
             Ok(msg) => msg,
         };
-        if let Err(e) = socket.send(Message::Text(message.into())).await {
+        let msg = match Message::try_from(&message) {
+            Err(e) => {
+                warn!("failed to parse message: {e}");
+                continue;
+            }
+            Ok(m) => m,
+        };
+        if let Err(e) = socket.send(msg).await {
             warn!("failed to send message via websocket: {e}");
             break;
         }
