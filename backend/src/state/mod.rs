@@ -3,7 +3,7 @@ use crate::twitch::{TWITCH_BOT_SCOPES, default_helix_client};
 use anyhow::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_yaml::{from_reader, to_writer};
+use serde_json::{from_reader as json_deserialize, to_writer as json_serialize};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 #[cfg(unix)]
@@ -50,7 +50,7 @@ impl AppStateInner {
             .read(true)
             .write(false)
             .open(&abs)?;
-        let persistent = from_reader::<&File, PersistentState>(&file)?;
+        let persistent = json_deserialize::<&File, PersistentState>(&file)?;
         persistent.extend(&mut state, abs).await?;
 
         Ok(Arc::new(RwLock::new(state)))
@@ -76,7 +76,7 @@ impl AppStateInner {
         }
 
         let persistent = PersistentState::from(self);
-        to_writer(file, &persistent)?;
+        json_serialize(file, &persistent)?;
         Ok(())
     }
 
@@ -117,7 +117,7 @@ impl AppStateInner {
     }
 
     async fn new(args: &Args) -> Result<Self> {
-        let path = args.storage().join("persistent.yaml");
+        let path = args.storage().join("persistent.json");
         let client_id = ClientId::from_str(args.twitch_client_id())?;
         let client_secret = ClientSecret::from_str(args.twitch_client_secret())?;
         let helix = default_helix_client();

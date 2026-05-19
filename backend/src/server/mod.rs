@@ -38,6 +38,10 @@ impl Server {
         })
     }
 
+    pub fn send_say(&self, id: u64, message: String) -> usize {
+        self.session.send(Message::Say { id, text: message })
+    }
+
     pub async fn join(&mut self) -> Result<()> {
         if let Some(handle) = self.handle.take() {
             handle.await??;

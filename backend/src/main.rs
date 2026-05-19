@@ -1,3 +1,4 @@
+use crate::ai::AI;
 use crate::args::Args;
 use crate::server::Server;
 use crate::state::AppStateInner;
@@ -12,6 +13,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
 use twitch_api::eventsub::{Event, Message};
 
+mod ai;
 mod args;
 mod init;
 mod server;
@@ -49,6 +51,7 @@ async fn main() -> Result<()> {
         }
         Ok(client) => Some(client),
     };
+    let mut ai = AI::new(&args)?;
     let mut server = Server::start(state.clone(), args.port());
 
     if let Some(c) = client.as_mut() {
@@ -59,8 +62,12 @@ async fn main() -> Result<()> {
                     Event::ChannelChatMessageV1(payload) => match payload.message {
                         Message::Notification(data) => {
                             let id = 42;
-                            let n = server.send_eval(id, data.message.text);
-                            info!("send to {n} clients");
+                            let text = data.message.text;
+                            let n1 = server.send_eval(id, text.clone());
+                            info!("send eval \"{text}\" to {n1} clients");
+                            let res = ai.eval(&text)?;
+                            let n2 = server.send_say(id, res);
+                            info!("send say response to {n2} clients");
                         }
                         _ => {
                             error!("unknown message: {:?}", payload);
