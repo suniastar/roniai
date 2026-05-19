@@ -1,6 +1,7 @@
 use crate::args::Args;
-use crate::twitch::TwitchClient;
+use crate::twitch::{TWITCH_BOT_SCOPES, default_helix_client};
 use anyhow::Result;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{from_reader, to_writer};
 use std::collections::HashMap;
@@ -12,7 +13,10 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
-use twitch_api::twitch_oauth2::{ClientId, ClientSecret, RefreshToken};
+use twitch_api::HelixClient;
+use twitch_api::twitch_oauth2::{
+    AppAccessToken, ClientId, ClientIdRef, ClientSecret, ClientSecretRef, RefreshToken, UserToken,
+};
 use twitch_api::types::UserId;
 
 pub type AppState = Arc<RwLock<AppStateInner>>;
@@ -20,7 +24,10 @@ pub type AppState = Arc<RwLock<AppStateInner>>;
 #[derive(Debug)]
 pub struct AppStateInner {
     path: PathBuf,
-    twitch: TwitchClient,
+    client_id: ClientId,
+    client_secret: ClientSecret,
+    app_token: AppAccessToken,
+    user_token: Option<UserToken>,
     voice_by_user_id: HashMap<UserId, ()>,
 }
 
@@ -37,16 +44,15 @@ impl AppStateInner {
 
         let abs = state.path.canonicalize()?;
         info!("reading config from {}", abs.display());
-
         let file = OpenOptions::new()
             .create(false)
             .truncate(false)
             .read(true)
             .write(false)
             .open(&abs)?;
-
         let persistent = from_reader::<&File, PersistentState>(&file)?;
         persistent.extend(&mut state, abs).await?;
+
         Ok(Arc::new(RwLock::new(state)))
     }
 
@@ -74,23 +80,61 @@ impl AppStateInner {
         Ok(())
     }
 
-    pub fn twitch(&mut self) -> &mut TwitchClient {
-        &mut self.twitch
+    pub fn client_id(&self) -> &ClientIdRef {
+        self.client_id.as_ref()
+    }
+
+    pub fn client_secret(&self) -> &ClientSecretRef {
+        self.client_secret.as_ref()
+    }
+
+    pub fn app_token(&self) -> &AppAccessToken {
+        &self.app_token
+    }
+
+    pub fn set_user_token(&mut self, user_token: UserToken) {
+        self.user_token = Some(user_token);
+    }
+
+    pub fn user_token(&self) -> Option<&UserToken> {
+        self.user_token.as_ref()
     }
 
     pub fn voice_by_user_id(&self, user_id: UserId) -> Option<&()> {
         self.voice_by_user_id.get(&user_id)
     }
 
+    pub async fn refresh_app_token(&mut self, helix: &HelixClient<'static, Client>) -> Result<()> {
+        let app_token = AppAccessToken::get_app_access_token(
+            helix.get_client(),
+            self.client_id.clone(),
+            self.client_secret.clone(),
+            TWITCH_BOT_SCOPES.to_vec(),
+        )
+        .await?;
+        self.app_token = app_token;
+        Ok(())
+    }
+
     async fn new(args: &Args) -> Result<Self> {
         let path = args.storage().join("persistent.yaml");
         let client_id = ClientId::from_str(args.twitch_client_id())?;
         let client_secret = ClientSecret::from_str(args.twitch_client_secret())?;
-        let twitch = TwitchClient::new(client_id, client_secret).await?;
+        let helix = default_helix_client();
+        let app_token = AppAccessToken::get_app_access_token(
+            helix.get_client(),
+            client_id.clone(),
+            client_secret.clone(),
+            TWITCH_BOT_SCOPES.to_vec(),
+        )
+        .await?;
         let voice_by_user_id = HashMap::new();
         Ok(Self {
             path,
-            twitch,
+            client_id,
+            client_secret,
+            app_token,
+            user_token: None,
             voice_by_user_id,
         })
     }
@@ -106,7 +150,15 @@ impl PersistentState {
     async fn extend(self, state: &mut AppStateInner, path: PathBuf) -> Result<()> {
         state.path = path;
         if let Some(refresh_token) = self.refresh_token {
-            state.twitch.set_user_token(refresh_token).await?;
+            let helix = default_helix_client();
+            let token = UserToken::from_refresh_token(
+                helix.get_client(),
+                refresh_token,
+                state.client_id.clone(),
+                state.client_secret.clone(),
+            )
+            .await?;
+            state.user_token = Some(token);
         }
         state.voice_by_user_id = self.voice_by_user_id;
         Ok(())
@@ -117,10 +169,9 @@ impl From<&AppStateInner> for PersistentState {
     fn from(value: &AppStateInner) -> Self {
         Self {
             refresh_token: value
-                .twitch
-                .user_token()
-                .map(|t| t.refresh_token.clone())
-                .flatten(),
+                .user_token
+                .as_ref()
+                .and_then(|t| t.refresh_token.clone()),
             voice_by_user_id: value.voice_by_user_id.clone(),
         }
     }

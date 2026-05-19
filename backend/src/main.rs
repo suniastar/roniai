@@ -1,13 +1,10 @@
 use crate::args::Args;
 use crate::server::Server;
-use crate::state::{AppState, AppStateInner};
+use crate::state::AppStateInner;
 use crate::websocket::WebsocketClient;
 use anyhow::Result;
 use clap::Parser;
-use std::sync::Arc;
-use tokio::spawn;
-use tokio::sync::RwLock;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::fmt::Layer as FmtLayer;
 use tracing_subscriber::layer::SubscriberExt;
@@ -45,10 +42,40 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     let state = AppStateInner::load(&args).await?;
 
-    // let mut client = WebsocketClient::start();
-    let mut server = Server::start(state, args.port());
+    let mut client = match WebsocketClient::start(state.clone()).await {
+        Err(e) => {
+            warn!("running without websocket client: {e}");
+            None
+        }
+        Ok(client) => Some(client),
+    };
+    let mut server = Server::start(state.clone(), args.port());
+
+    if let Some(c) = client.as_mut() {
+        loop {
+            match c.recv().await {
+                None => break,
+                Some(event) => match event {
+                    Event::ChannelChatMessageV1(payload) => match payload.message {
+                        Message::Notification(data) => {
+                            let n = server.send(data.message.text);
+                            info!("send to {n} clients");
+                        }
+                        _ => {
+                            error!("unknown message: {:?}", payload);
+                        }
+                    },
+                    _ => {
+                        error!("unknown event: {:?}", event);
+                    }
+                },
+            }
+        }
+    }
 
     server.join().await?;
-    // client.join().await?;
+    if let Some(c) = client.as_mut() {
+        c.join().await?;
+    }
     Ok(())
 }

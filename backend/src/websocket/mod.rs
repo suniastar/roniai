@@ -1,6 +1,7 @@
+use crate::state::AppState;
 use crate::websocket::connection::WebsocketConnection;
 use crate::websocket::session::WebsocketSession;
-use anyhow::Result;
+use anyhow::{Result, ensure};
 use std::time::{Duration, Instant};
 use tokio::spawn;
 use tokio::sync::mpsc::Receiver;
@@ -19,13 +20,17 @@ pub struct WebsocketClient {
 }
 
 impl WebsocketClient {
-    pub fn start() -> WebsocketClient {
+    pub async fn start(state: AppState) -> Result<WebsocketClient> {
+        ensure!(
+            state.read().await.user_token().is_some(),
+            "user must be logged in"
+        );
         let (session, receiver) = WebsocketSession::new();
-        let handle = WebsocketClientThread::start(session);
-        Self {
+        let handle = WebsocketClientThread::start(state, session);
+        Ok(Self {
             receiver,
             handle: Some(handle),
-        }
+        })
     }
 
     pub async fn recv(&mut self) -> Option<Event> {
@@ -42,18 +47,19 @@ impl WebsocketClient {
 
 #[derive(Debug)]
 struct WebsocketClientThread {
+    state: AppState,
     session: WebsocketSession,
 }
 
 impl WebsocketClientThread {
-    fn start(session: WebsocketSession) -> JoinHandle<Result<()>> {
-        let thread = Self { session };
+    fn start(state: AppState, session: WebsocketSession) -> JoinHandle<Result<()>> {
+        let thread = Self { state, session };
         spawn(Self::run(thread))
     }
 
     async fn run(self) -> Result<()> {
         loop {
-            let mut conn = WebsocketConnection::start(self.session.clone());
+            let mut conn = WebsocketConnection::start(self.state.clone(), self.session.clone());
             while conn.is_running() {
                 let now = Instant::now();
                 let last_seen = self.session.last_seen().await;

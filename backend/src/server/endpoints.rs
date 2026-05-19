@@ -1,5 +1,5 @@
 use crate::server::session::{LoginSession, ServerSession};
-use crate::twitch::TwitchClient;
+use crate::twitch::{TWITCH_USER_SCOPES, default_helix_client};
 use anyhow::{Context, Result, bail};
 use axum::extract::ws::{CloseFrame, Message, Utf8Bytes, WebSocket};
 use axum::extract::{Query, State, WebSocketUpgrade};
@@ -9,16 +9,21 @@ use serde::Deserialize;
 use std::collections::HashSet;
 use tracing::warn;
 use twitch_api::helix::Scope;
-use twitch_api::twitch_oauth2::CsrfToken;
+use twitch_api::twitch_oauth2::{CsrfToken, UserToken};
 
 pub async fn twitch_login(State(session): State<LoginSession>) -> impl IntoResponse {
-    let callback_url = session.callback_url().await;
     let state = session.state().await;
-    let mut lock = state.write().await;
-    let (url, csrf) = lock
-        .twitch()
-        .generate_login_url(TwitchClient::user_scopes(), callback_url);
-    session.set_scopes(TwitchClient::user_scopes()).await;
+    let lock = state.read().await;
+    let callback_url = session.callback_url().await;
+    let (url, csrf) = UserToken::builder(
+        lock.client_id().to_owned(),
+        lock.client_secret().to_owned(),
+        callback_url,
+    )
+    .set_scopes(TWITCH_USER_SCOPES.to_vec())
+    .force_verify(true)
+    .generate_url();
+    session.set_scopes(&TWITCH_USER_SCOPES).await;
     session.set_csrf_token(csrf.clone()).await;
     Redirect::temporary(url.as_str())
 }
@@ -123,12 +128,22 @@ async fn verify_callback_and_save_token(
     }
 
     // request token (code flow)staate_scope
+    let helix = default_helix_client();
     let state = session.state().await;
-    let callback_url = session.callback_url().await;
     let mut lock = state.write().await;
-    lock.twitch()
-        .set_user_token_from_response(state_scopes, callback_url, param_csrf, param_code)
+    let callback_url = session.callback_url().await;
+    let mut builder = UserToken::builder(
+        lock.client_id().to_owned(),
+        lock.client_secret().to_owned(),
+        callback_url,
+    )
+    .set_scopes(state_scopes.to_vec())
+    .force_verify(true);
+    builder.set_csrf(param_csrf);
+    let token = builder
+        .get_user_token(helix.get_client(), session_csrf.as_str(), &param_code)
         .await?;
+    lock.set_user_token(token);
     lock.save().await?;
     Ok(())
 }
@@ -151,8 +166,7 @@ async fn ws_mrsroni_handle(session: ServerSession, mut socket: WebSocket) {
             }
             Ok(msg) => msg,
         };
-        let text = format!("{message}");
-        if let Err(e) = socket.send(Message::Text(text.into())).await {
+        if let Err(e) = socket.send(Message::Text(message.into())).await {
             warn!("failed to send message via websocket: {e}");
             break;
         }

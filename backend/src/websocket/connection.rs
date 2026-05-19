@@ -1,5 +1,7 @@
+use crate::state::AppState;
+use crate::twitch::default_helix_client;
 use crate::websocket::session::WebsocketSession;
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use futures_util::StreamExt;
 use std::fmt::Debug;
 use tokio::net::TcpStream;
@@ -9,7 +11,8 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 use tracing::{debug, error, info, warn};
-use twitch_api::eventsub::{Event, EventsubWebsocketData};
+use twitch_api::eventsub::channel::ChannelChatMessageV1;
+use twitch_api::eventsub::{Event, EventsubWebsocketData, Transport};
 
 #[derive(Debug)]
 pub struct WebsocketConnection {
@@ -17,8 +20,8 @@ pub struct WebsocketConnection {
 }
 
 impl WebsocketConnection {
-    pub fn start(session: WebsocketSession) -> Self {
-        let handle = WebsocketConnectionThread::start(session);
+    pub fn start(state: AppState, session: WebsocketSession) -> Self {
+        let handle = WebsocketConnectionThread::start(state, session);
         Self {
             handle: Some(handle),
         }
@@ -54,13 +57,18 @@ impl WebsocketConnection {
 
 #[derive(Debug)]
 struct WebsocketConnectionThread {
-    run: bool,
+    state: AppState,
     session: WebsocketSession,
+    run: bool,
 }
 
 impl WebsocketConnectionThread {
-    fn start(session: WebsocketSession) -> JoinHandle<Result<()>> {
-        let thread = Self { run: true, session };
+    fn start(state: AppState, session: WebsocketSession) -> JoinHandle<Result<()>> {
+        let thread = Self {
+            state,
+            session,
+            run: true,
+        };
         spawn(Self::run(thread))
     }
 
@@ -137,7 +145,10 @@ impl WebsocketConnectionThread {
         match data {
             EventsubWebsocketData::Welcome { payload, .. } => {
                 let session_id = payload.session.id.as_ref();
-                info!("connection established: {session_id}");
+                match self.register_event_subscribers(session_id).await {
+                    Err(e) => warn!("failed to register subscribers: {e}"),
+                    Ok(()) => info!("connection established: {session_id}"),
+                };
             }
             EventsubWebsocketData::Keepalive { .. } => {} // nothing to do
             EventsubWebsocketData::Notification { payload, .. } => {
@@ -157,6 +168,35 @@ impl WebsocketConnectionThread {
                 self.run = false;
             }
             _ => error!("unknown event: {data:?}"),
+        }
+    }
+
+    async fn register_event_subscribers(&self, session_id: &str) -> Result<()> {
+        let helix = default_helix_client();
+        let mut lock = self.state.write().await;
+        let mut tried_refresh = false;
+        loop {
+            let user_token = lock.user_token().context("user is not logged in")?;
+            let broadcaster_id = user_token.user_id.clone();
+            let bot_id = user_token.user_id.clone();
+            let event = ChannelChatMessageV1::new(broadcaster_id, bot_id);
+            let transport = Transport::websocket(session_id);
+            match helix
+                .create_eventsub_subscription(event, transport, user_token)
+                .await
+            {
+                Err(e) => {
+                    if !tried_refresh {
+                        warn!("request failed and will be tried again after refreshing token: {e}");
+                        lock.refresh_app_token(&helix).await?;
+                        lock.save().await?;
+                        tried_refresh = true;
+                    } else {
+                        return Err(e)?;
+                    }
+                }
+                Ok(_) => return Ok(()),
+            }
         }
     }
 }

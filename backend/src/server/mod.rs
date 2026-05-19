@@ -4,7 +4,6 @@ use crate::state::AppState;
 use anyhow::Result;
 use axum::routing::get;
 use axum::{Router, serve};
-use futures_util::StreamExt;
 use reqwest::Url;
 use tokio::net::TcpListener;
 use tokio::spawn;
@@ -28,6 +27,10 @@ impl Server {
             session,
             handle: Some(handle),
         }
+    }
+
+    pub fn send(&self, message: String) -> usize {
+        self.session.send(message)
     }
 
     pub async fn join(&mut self) -> Result<()> {
