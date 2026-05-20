@@ -1,5 +1,4 @@
 use crate::ai::llm::LLM;
-use crate::args::Args;
 use anyhow::Result;
 
 mod llm;
@@ -9,8 +8,8 @@ pub struct AI {
 }
 
 impl AI {
-    pub fn new(args: &Args) -> Result<Self> {
-        let llm = LLM::new(args)?;
+    pub fn new() -> Result<Self> {
+        let llm = LLM::new()?;
         Ok(Self { llm })
     }
 

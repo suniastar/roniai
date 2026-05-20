@@ -43,6 +43,7 @@ async fn main() -> Result<()> {
 
     let args = Args::parse();
     let state = AppStateInner::load(&args).await?;
+    let mut ai = AI::new()?;
 
     let mut client = match WebsocketClient::start(state.clone()).await {
         Err(e) => {
@@ -51,7 +52,6 @@ async fn main() -> Result<()> {
         }
         Ok(client) => Some(client),
     };
-    let mut ai = AI::new(&args)?;
     let mut server = Server::start(state.clone(), args.port());
 
     if let Some(c) = client.as_mut() {
@@ -62,12 +62,12 @@ async fn main() -> Result<()> {
                     Event::ChannelChatMessageV1(payload) => match payload.message {
                         Message::Notification(data) => {
                             let id = 42;
-                            let text = data.message.text;
+                            let text = format!("Hey Roni AI. {}", data.message.text);
                             let n1 = server.send_eval(id, text.clone());
                             info!("send eval \"{text}\" to {n1} clients");
                             let res = ai.eval(&text)?;
-                            let n2 = server.send_say(id, res);
-                            info!("send say response to {n2} clients");
+                            let n2 = server.send_say(id, res.clone());
+                            info!("send say \"{res}\" to {n2} clients");
                         }
                         _ => {
                             error!("unknown message: {:?}", payload);
