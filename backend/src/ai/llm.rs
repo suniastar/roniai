@@ -5,11 +5,11 @@ use llama_cpp_2::llama_backend::LlamaBackend;
 use llama_cpp_2::llama_batch::LlamaBatch;
 use llama_cpp_2::model::params::LlamaModelParams;
 use llama_cpp_2::model::{AddBos, LlamaModel};
+use llama_cpp_2::openai::OpenAIChatTemplateParams;
 use llama_cpp_2::sampling::LlamaSampler;
+use serde_json::json;
 use std::num::NonZeroU32;
 use std::path::PathBuf;
-use llama_cpp_2::openai::OpenAIChatTemplateParams;
-use serde_json::json;
 
 const REPO: &str = "unsloth/Qwen3.5-9B-GGUF";
 const MODEL: &str = "Qwen3.5-9B-Q8_0.gguf";

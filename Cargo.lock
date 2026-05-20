@@ -235,6 +235,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "candle-core",
  "clap",
  "encoding_rs",
  "futures-util",
@@ -250,6 +251,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "twitch_api",
+ "voice",
 ]
 
 [[package]]
@@ -3751,6 +3753,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "voice"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "candle-core",
+ "hf-hub",
+ "qwen3-tts",
+ "rmp-serde",
+ "serde",
 ]
 
 [[package]]

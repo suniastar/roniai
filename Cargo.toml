@@ -1,8 +1,12 @@
 [workspace]
 resolver = "3"
 members = [
-    "backend"
+    "backend",
+    "voice",
 ]
+
+[workspace.dependencies]
+voice = {path = "./voice"}
 
 [profile.release]
 lto = true

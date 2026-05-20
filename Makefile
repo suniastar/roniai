@@ -8,6 +8,9 @@ dependencies: ## Installs all optional cargo tools
 	cargo install cargo-udeps
 	cargo install samply
 
+prepare: ## Preclones the voice samples for easier use later on.
+	cargo run --package voice --bin voice
+
 build: ## Builds a new debug build
 	cargo build
 	npm run build
