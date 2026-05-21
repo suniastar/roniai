@@ -1,8 +1,19 @@
 <script lang="ts">
-	import welcomeFallback from '$lib/images/svelte-welcome.png';
-	import welcome from '$lib/images/svelte-welcome.webp';
+	import Roni from '$lib/components/roni.svelte';
 
-	import Counter from './Counter.svelte';
+	let mirror = $state(false);
+	let blink = $state(false);
+	let mouthOpen = $state(false);
+
+	const mirrorClick = () => {
+		mirror = !mirror;
+	};
+	const blinkClick = () => {
+		blink = !blink;
+	};
+	const mouthClick = () => {
+		mouthOpen = !mouthOpen;
+	};
 </script>
 
 <svelte:head>
@@ -11,50 +22,15 @@
 </svelte:head>
 
 <section>
-	<h1>
-		<span class="welcome">
-			<picture>
-				<source srcset={welcome} type="image/webp" />
-				<img src={welcomeFallback} alt="Welcome" />
-			</picture>
-		</span>
+	<button onclick={mirrorClick}>Mirror {mirror}</button>
+	<button onclick={blinkClick}>Blink {blink}</button>
+	<button onclick={mouthClick}>Mouth {mouthOpen}</button>
 
-		to your new<br />SvelteKit app
-	</h1>
-
-	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
-	</h2>
-
-	<Counter />
+	<Roni visible={true} {mirror} {blink} {mouthOpen}></Roni>
 </section>
 
 <style>
 	section {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		flex: 0.6;
-	}
-
-	h1 {
-		width: 100%;
-	}
-
-	.welcome {
-		display: block;
-		position: relative;
-		width: 100%;
-		height: 0;
-		padding: 0 0 calc(100% * 495 / 2048) 0;
-	}
-
-	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		display: block;
+		background: red;
 	}
 </style>

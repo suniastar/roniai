@@ -5,6 +5,8 @@ use crate::state::AppState;
 use anyhow::Result;
 use qwen3_tts::AudioBuffer;
 use rand::Rng;
+use std::time::Instant;
+use tracing::debug;
 use twitch_api::types::UserIdRef;
 
 mod llm;
@@ -33,13 +35,17 @@ impl AI {
     where
         R: Rng,
     {
+        let start = Instant::now();
         let lock = self.state.read().await;
         let voice = match lock.voice_by_user_id(user_id) {
             Some(voice) => voice,
             None => Sample::random(rng)?,
         };
+        debug!("running prompts with {voice}: {text}");
         let res_text = self.llm.prompt(text)?;
+        debug!("response text is: {res_text}");
         let (req, res) = self.tts.prompt(voice, &res_text)?;
+        debug!("complete. took {}s", start.elapsed().as_secs());
         Ok(AIResponse::new(req, res_text, res))
     }
 }

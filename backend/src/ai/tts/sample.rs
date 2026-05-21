@@ -3,6 +3,7 @@ use hound::{SampleFormat, WavReader};
 use qwen3_tts::AudioBuffer;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 const MASK: u32 = u8::MAX as u32;
 
@@ -12,6 +13,15 @@ const MASK: u32 = u8::MAX as u32;
 pub enum Sample {
     Roni = 0,
     Json,
+}
+
+impl Display for Sample {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            Self::Roni => write!(f, "roni"),
+            Self::Json => write!(f, "json"),
+        }
+    }
 }
 
 impl TryFrom<u8> for Sample {
