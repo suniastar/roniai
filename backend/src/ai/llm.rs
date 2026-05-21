@@ -24,6 +24,7 @@ Wenn nicht anders angegeben, antwortest du nur auf Deutsch, aber du kannst Wört
 Versuche, deine Antwort so kurz wie möglich und in einem menschenähnlichen Stil zu halten und vermeide Punktlisten und Emojis.
 "#;
 
+#[derive(Debug)]
 pub struct LLM {
     path: PathBuf,
     backend: LlamaBackend,

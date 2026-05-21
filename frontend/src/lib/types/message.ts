@@ -4,13 +4,20 @@ export type Message =
 	| {
 			type: 'eval';
 			id: number;
-			prompt: string;
+			req_txt: string;
 	  }
 	| {
 			type: 'say';
 			id: number;
-			prompt: string;
+			req_wav: Audio;
+			res_txt: string;
+			res_wav: Audio;
 	  };
+
+export type Audio = {
+	samples: number[];
+	sample_rate: number;
+};
 
 export async function decodeMessage(blob: Blob): Promise<Message> {
 	const stream = blob.stream();

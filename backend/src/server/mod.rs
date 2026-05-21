@@ -1,3 +1,4 @@
+use crate::ai::AIResponse;
 use crate::server::endpoints::{twitch_callback, twitch_login, ws_mrsroni};
 use crate::server::message::Message;
 use crate::server::session::{LoginSession, ServerSession};
@@ -32,14 +33,11 @@ impl Server {
     }
 
     pub fn send_eval(&self, id: u64, message: String) -> usize {
-        self.session.send(Message::EvaluatingPrompt {
-            id,
-            prompt: message,
-        })
+        self.session.send(Message::eval(id, message))
     }
 
-    pub fn send_say(&self, id: u64, message: String) -> usize {
-        self.session.send(Message::Say { id, text: message })
+    pub fn send_say(&self, id: u64, res: AIResponse) -> usize {
+        self.session.send(Message::say(id, res))
     }
 
     pub async fn join(&mut self) -> Result<()> {

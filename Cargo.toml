@@ -2,11 +2,7 @@
 resolver = "3"
 members = [
     "backend",
-    "voice",
 ]
-
-[workspace.dependencies]
-voice = {path = "./voice"}
 
 [profile.release]
 lto = true

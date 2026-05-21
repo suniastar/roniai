@@ -1,28 +1,62 @@
 use crate::ai::llm::LLM;
 use crate::ai::tts::TTS;
+use crate::ai::tts::sample::Sample;
+use crate::state::AppState;
 use anyhow::Result;
+use qwen3_tts::AudioBuffer;
+use rand::Rng;
+use twitch_api::types::UserIdRef;
 
 mod llm;
-mod tts;
+pub mod tts;
 
+#[derive(Debug)]
 pub struct AI {
+    state: AppState,
     llm: LLM,
     tts: TTS,
 }
 
 impl AI {
-    pub fn new() -> Result<Self> {
+    pub fn new(state: AppState) -> Result<Self> {
         let llm = LLM::new()?;
         let tts = TTS::new()?;
-        Ok(Self { llm, tts })
+        Ok(Self { state, llm, tts })
     }
 
-    pub fn eval(&mut self, text: &str) -> Result<String> {
+    pub async fn eval<R>(
+        &mut self,
+        rng: &mut R,
+        user_id: &UserIdRef,
+        text: &str,
+    ) -> Result<AIResponse>
+    where
+        R: Rng,
+    {
+        let lock = self.state.read().await;
+        let voice = match lock.voice_by_user_id(user_id) {
+            Some(voice) => voice,
+            None => Sample::random(rng)?,
+        };
         let res_text = self.llm.prompt(text)?;
-        let req = self.tts.prompt(text)?;
-        let res = self.tts.prompt(&res_text)?;
-        req.save("req.wav")?;
-        req.save("res.wav")?;
-        Ok(res_text)
+        let (req, res) = self.tts.prompt(voice, &res_text)?;
+        Ok(AIResponse::new(req, res_text, res))
+    }
+}
+
+#[derive(Debug)]
+pub struct AIResponse {
+    pub request_wav: AudioBuffer,
+    pub response_text: String,
+    pub response_wav: AudioBuffer,
+}
+
+impl AIResponse {
+    fn new(request_wav: AudioBuffer, response_text: String, response_wav: AudioBuffer) -> Self {
+        Self {
+            request_wav,
+            response_text,
+            response_wav,
+        }
     }
 }

@@ -1,3 +1,4 @@
+use crate::ai::tts::sample::Sample;
 use crate::args::Args;
 use crate::twitch::{TWITCH_BOT_SCOPES, default_helix_client};
 use anyhow::Result;
@@ -17,7 +18,7 @@ use twitch_api::HelixClient;
 use twitch_api::twitch_oauth2::{
     AppAccessToken, ClientId, ClientIdRef, ClientSecret, ClientSecretRef, RefreshToken, UserToken,
 };
-use twitch_api::types::UserId;
+use twitch_api::types::{UserId, UserIdRef};
 
 pub type AppState = Arc<RwLock<AppStateInner>>;
 
@@ -28,7 +29,7 @@ pub struct AppStateInner {
     client_secret: ClientSecret,
     app_token: AppAccessToken,
     user_token: Option<UserToken>,
-    voice_by_user_id: HashMap<UserId, ()>,
+    voice_by_user_id: HashMap<UserId, Sample>,
 }
 
 impl AppStateInner {
@@ -100,8 +101,8 @@ impl AppStateInner {
         self.user_token.as_ref()
     }
 
-    pub fn voice_by_user_id(&self, user_id: UserId) -> Option<&()> {
-        self.voice_by_user_id.get(&user_id)
+    pub fn voice_by_user_id(&self, user_id: &UserIdRef) -> Option<Sample> {
+        self.voice_by_user_id.get(user_id).map(|s| *s)
     }
 
     pub async fn refresh_app_token(&mut self, helix: &HelixClient<'static, Client>) -> Result<()> {
@@ -143,7 +144,7 @@ impl AppStateInner {
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct PersistentState {
     refresh_token: Option<RefreshToken>,
-    voice_by_user_id: HashMap<UserId, ()>,
+    voice_by_user_id: HashMap<UserId, Sample>,
 }
 
 impl PersistentState {
