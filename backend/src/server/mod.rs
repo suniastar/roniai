@@ -57,7 +57,10 @@ struct ServerThread {
 
 impl ServerThread {
     fn start(state: AppState, session: ServerSession, port: u16) -> JoinHandle<Result<()>> {
-        let callback_url = format!("http://localhost:{port}/twitch/callback");
+        let callback_url = match port {
+            p if p == 80 => String::from("http://localhost/twitch/callback"),
+            _ => format!("http://localhost:{port}/twitch/callback"),
+        };
         let url = Url::parse(&callback_url).expect("failed static url parse");
         let login_session = LoginSession::new(state, url);
         let thread = Self {

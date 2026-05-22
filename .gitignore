@@ -6,6 +6,7 @@
 
 # Svelte output
 node_modules
+build
 .output
 .vercel
 .netlify

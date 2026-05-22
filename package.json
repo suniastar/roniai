@@ -15,6 +15,6 @@
     "check:watch": "npm run check:watch --workspaces",
     "lint": "npm run link --workspaces",
     "format": "npm run format --workspaces",
-    "clean": "npm run clean --workspace"
+    "clean": "rm -rf node_modules && npm run clean --workspace"
   }
 }

@@ -11,7 +11,9 @@ use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async};
 use tracing::{debug, error, info, warn};
-use twitch_api::eventsub::channel::ChannelChatMessageV1;
+use twitch_api::eventsub::channel::{
+    ChannelChatMessageV1, ChannelPointsCustomRewardRedemptionAddV1,
+};
 use twitch_api::eventsub::{Event, EventsubWebsocketData, Transport};
 
 #[derive(Debug)]
@@ -175,11 +177,41 @@ impl WebsocketConnectionThread {
         let helix = default_helix_client();
         let mut lock = self.state.write().await;
         let mut tried_refresh = false;
+
+        // register chat messages
         loop {
             let user_token = lock.user_token().context("user is not logged in")?;
             let broadcaster_id = user_token.user_id.clone();
             let bot_id = user_token.user_id.clone();
             let event = ChannelChatMessageV1::new(broadcaster_id, bot_id);
+            let transport = Transport::websocket(session_id);
+            match helix
+                .create_eventsub_subscription(event, transport, user_token)
+                .await
+            {
+                Err(e) => {
+                    if !tried_refresh {
+                        warn!("request failed and will be tried again after refreshing token: {e}");
+                        lock.refresh_app_token(&helix).await?;
+                        lock.save().await?;
+                        tried_refresh = true;
+                    } else {
+                        return Err(e)?;
+                    }
+                }
+                Ok(_) => break,
+            }
+        }
+
+        // register channel point rewards
+        loop {
+            let user_token = lock.user_token().context("user is not logged in")?;
+            let broadcaster_id = user_token.user_id.clone();
+            let mut event =
+                ChannelPointsCustomRewardRedemptionAddV1::broadcaster_user_id(broadcaster_id);
+            if let Some(reward_id) = lock.reward_id() {
+                event = event.reward_id(reward_id.clone());
+            }
             let transport = Transport::websocket(session_id);
             match helix
                 .create_eventsub_subscription(event, transport, user_token)

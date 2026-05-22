@@ -11,6 +11,7 @@ use tracing_subscriber::fmt::Layer as FmtLayer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{EnvFilter, Layer};
+use twitch_api::eventsub::channel::chat::message::Badge;
 use twitch_api::eventsub::{Event, Message};
 
 mod ai;
@@ -64,19 +65,51 @@ async fn main() -> Result<()> {
                 Some(event) => match event {
                     Event::ChannelChatMessageV1(payload) => match payload.message {
                         Message::Notification(data) => {
-                            let id = rng.next_u64();
-                            let text = format!("Hey Roni AI. {}", data.message.text);
-                            let user_id = data.chatter_user_id;
-                            let n1 = server.send_eval(id, text.clone());
-                            info!("send eval \"{text}\" to {n1} clients");
-                            let res = ai.eval(&mut rng, &user_id, &text).await?;
-                            let n2 = server.send_say(id, res);
-                            info!("send say to {n2} clients");
+                            if !can_use_chat_command(&data.badges) {
+                                continue;
+                            }
+                            if let Some(text) = get_command_text(&data.message.text) {
+                                let id = rng.next_u64();
+                                let req = format!("Hey Roni AI. {}", text);
+                                let user_id = data.chatter_user_id;
+                                let n1 = server.send_eval(id, req.clone());
+                                info!("send eval \"{text}\" to {n1} clients");
+                                let res = ai.eval(&mut rng, &user_id, &req).await?;
+                                let n2 = server.send_say(id, res);
+                                info!("send say to {n2} clients");
+                            }
                         }
                         _ => {
                             error!("unknown message: {:?}", payload);
                         }
                     },
+                    Event::ChannelPointsCustomRewardRedemptionAddV1(payload) => {
+                        match payload.message {
+                            Message::Notification(data) => {
+                                if let Some(reward_id) = state.read().await.reward_id() {
+                                    match &data.reward.id {
+                                        r if r == reward_id => {
+                                            let id = rng.next_u64();
+                                            let text = format!("Hey Roni AI. {}", data.user_input);
+                                            let user_id = data.user_id;
+                                            let n1 = server.send_eval(id, text.clone());
+                                            info!("send eval \"{text}\" to {n1} clients");
+                                            let res = ai.eval(&mut rng, &user_id, &text).await?;
+                                            let n2 = server.send_say(id, res);
+                                            info!("send say to {n2} clients");
+                                        }
+                                        _ => info!(
+                                            "received unrelated reward: {}",
+                                            data.reward.title
+                                        ),
+                                    }
+                                }
+                            }
+                            _ => {
+                                error!("unknown message: {:?}", payload);
+                            }
+                        }
+                    }
                     _ => {
                         error!("unknown event: {:?}", event);
                     }
@@ -90,4 +123,21 @@ async fn main() -> Result<()> {
         c.join().await?;
     }
     Ok(())
+}
+
+fn can_use_chat_command(badges: &[Badge]) -> bool {
+    for badge in badges {
+        let id = badge.set_id.as_str();
+        if id == "broadcaster" || id == "lead_moderator" || id == "moderator" {
+            return true;
+        }
+    }
+    false
+}
+
+fn get_command_text(message: &str) -> Option<&str> {
+    if !message.starts_with("!roniai ") {
+        return None;
+    }
+    Some(message[8..].trim())
 }

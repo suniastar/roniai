@@ -18,7 +18,7 @@ use twitch_api::HelixClient;
 use twitch_api::twitch_oauth2::{
     AppAccessToken, ClientId, ClientIdRef, ClientSecret, ClientSecretRef, RefreshToken, UserToken,
 };
-use twitch_api::types::{UserId, UserIdRef};
+use twitch_api::types::{RewardId, UserId, UserIdRef};
 
 pub type AppState = Arc<RwLock<AppStateInner>>;
 
@@ -29,6 +29,7 @@ pub struct AppStateInner {
     client_secret: ClientSecret,
     app_token: AppAccessToken,
     user_token: Option<UserToken>,
+    reward_id: Option<RewardId>,
     voice_by_user_id: HashMap<UserId, Sample>,
 }
 
@@ -101,6 +102,10 @@ impl AppStateInner {
         self.user_token.as_ref()
     }
 
+    pub fn reward_id(&self) -> Option<&RewardId> {
+        self.reward_id.as_ref()
+    }
+
     pub fn voice_by_user_id(&self, user_id: &UserIdRef) -> Option<Sample> {
         self.voice_by_user_id.get(user_id).map(|s| *s)
     }
@@ -136,6 +141,7 @@ impl AppStateInner {
             client_secret,
             app_token,
             user_token: None,
+            reward_id: None,
             voice_by_user_id,
         })
     }
@@ -144,6 +150,7 @@ impl AppStateInner {
 #[derive(Debug, Default, Serialize, Deserialize)]
 struct PersistentState {
     refresh_token: Option<RefreshToken>,
+    reward_id: Option<RewardId>,
     voice_by_user_id: HashMap<UserId, Sample>,
 }
 
@@ -161,6 +168,7 @@ impl PersistentState {
             .await?;
             state.user_token = Some(token);
         }
+        state.reward_id = self.reward_id;
         state.voice_by_user_id = self.voice_by_user_id;
         Ok(())
     }
@@ -173,6 +181,7 @@ impl From<&AppStateInner> for PersistentState {
                 .user_token
                 .as_ref()
                 .and_then(|t| t.refresh_token.clone()),
+            reward_id: value.reward_id.clone(),
             voice_by_user_id: value.voice_by_user_id.clone(),
         }
     }
