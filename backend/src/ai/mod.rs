@@ -44,7 +44,7 @@ impl AI {
         debug!("running prompts with {voice}: {text}");
         let res_text = self.llm.prompt(text)?;
         debug!("response text is: {res_text}");
-        let (req, res) = self.tts.prompt(voice, &res_text)?;
+        let (req, res) = self.tts.prompt(voice, text, &res_text)?;
         debug!("complete. took {}s", start.elapsed().as_secs());
         Ok(AIResponse::new(req, res_text, res))
     }

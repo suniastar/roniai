@@ -43,7 +43,12 @@ impl TTS {
         Ok(Self { model_directory })
     }
 
-    pub fn prompt(&mut self, clone: Sample, text: &str) -> Result<(AudioBuffer, AudioBuffer)> {
+    pub fn prompt(
+        &mut self,
+        clone: Sample,
+        req: &str,
+        res: &str,
+    ) -> Result<(AudioBuffer, AudioBuffer)> {
         let options = SynthesisOptions {
             seed: Some(42),
             ..SynthesisOptions::default()
@@ -56,7 +61,7 @@ impl TTS {
         let (ref_text_req, ref_audio_req) = clone.ref_audio_ref_text()?;
         let prompt_req = model.create_voice_clone_prompt(&ref_audio_req, Some(ref_text_req))?;
         let audio_req = model.synthesize_voice_clone(
-            text,
+            req,
             &prompt_req,
             Language::German,
             Some(options.clone()),
@@ -70,7 +75,7 @@ impl TTS {
         let (ref_text_res, ref_audio_res) = Sample::Roni.ref_audio_ref_text()?;
         let prompt_res = model.create_voice_clone_prompt(&ref_audio_res, Some(ref_text_res))?;
         let audio_res =
-            model.synthesize_voice_clone(text, &prompt_res, Language::German, Some(options))?;
+            model.synthesize_voice_clone(res, &prompt_res, Language::German, Some(options))?;
         debug!(
             "synthesize response voice clone in {}ms",
             start.elapsed().as_millis()

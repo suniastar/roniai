@@ -29,42 +29,17 @@ export async function decodeMessage(blob: Blob): Promise<Message> {
 	}
 }
 
-export async function playbackAudio(context: AudioContext, message: Message): Promise<void> {
-	if (message.type !== 'say') {
+export async function playbackAudio(context: AudioContext | null, audio: Audio): Promise<void> {
+	if (!context) {
 		return;
 	}
-	let buffer = context.createBuffer(1, message.req_wav.samples.length, message.req_wav.sample_rate);
-	buffer.copyToChannel(new Float32Array(message.req_wav.samples), 0);
-	const source = context.createBufferSource();
-	source.buffer = buffer;
-	source.connect(context.destination);
-	source.start();
-}
-
-function test() {
-	const ws = new WebsocketBuilder('ws://localhost:8080/ws/mrsroni')
-		.withInstantReconnect(true)
-		.withBuffer(new ArrayQueue())
-		.withBackoff(new ConstantBackoff(1000))
-		.onOpen((i, ev) => {
-			console.log('opened', i, ev);
-		})
-		.onClose((i, ev) => {
-			console.log('closed', i, ev);
-		})
-		.onError((i, ev) => {
-			console.log('error', i, ev);
-		})
-		.onMessage(async (i, ev) => {
-			let bytes = ev.data;
-			let msg = await decodeMessage(bytes);
-			console.log('message', msg);
-		})
-		.onRetry((i, ev) => {
-			console.log('retry', i, ev);
-		})
-		.onReconnect((i, ev) => {
-			console.log('reconnect', i, ev);
-		})
-		.build();
+	return new Promise((resolve) => {
+		let buffer = context.createBuffer(1, audio.samples.length, audio.sample_rate);
+		buffer.copyToChannel(new Float32Array(audio.samples), 0);
+		const source = context.createBufferSource();
+		source.buffer = buffer;
+		source.connect(context.destination);
+		source.onended = () => resolve();
+		source.start();
+	});
 }
