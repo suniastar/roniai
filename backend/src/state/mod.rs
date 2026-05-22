@@ -118,7 +118,7 @@ impl AppStateInner {
     }
 
     async fn new(args: &Args) -> Result<Self> {
-        let path = args.storage().join("persistent.json");
+        let path = args.persistent().to_owned();
         let client_id = ClientId::from_str(args.twitch_client_id())?;
         let client_secret = ClientSecret::from_str(args.twitch_client_secret())?;
         let helix = default_helix_client();

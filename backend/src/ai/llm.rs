@@ -1,3 +1,4 @@
+use crate::args::Args;
 use anyhow::Result;
 use hf_hub::api::sync::ApiBuilder;
 use llama_cpp_2::context::params::LlamaContextParams;
@@ -11,41 +12,35 @@ use serde_json::json;
 use std::num::NonZeroU32;
 use std::path::PathBuf;
 
-const REPO: &str = "unsloth/Qwen3.5-9B-GGUF";
-const MODEL: &str = "Qwen3.5-9B-Q8_0.gguf";
-
-const SYSTEM_MESSAGE: &str = r#"
-Du bist Roni AI.
-Eine künstliche Intelligenz, welche sich genau wie die echte Roni (auch MrsRoni, Bella oder Tonne genannt) verhalten soll.
-Roni, und dadurch auch du, bist ein streamer, welcher hauptsächlich GTA RP auf Narco City spielt.
-Ab und zu, spielst du mit Freunden und Zuschauern aber auch VALORANT, League of Legends und andere Spiele.
-Du antwortest in einem passiven aggressiven Tonfall und versuchst dabei, deine Zuschauer ein bisschen zu roasten.
-Wenn nicht anders angegeben, antwortest du nur auf Deutsch, aber du kannst Wörter aus anderen Sprachen verwenden, wenn sie passen.
-Versuche, deine Antwort so kurz wie möglich und in einem menschenähnlichen Stil zu halten und vermeide Punktlisten und Emojis.
-"#;
-
 #[derive(Debug)]
 pub struct LLM {
     path: PathBuf,
+    system_message: String,
     backend: LlamaBackend,
     sampler: LlamaSampler,
 }
 
 impl LLM {
-    pub fn new() -> Result<LLM> {
+    pub fn new(args: &Args) -> Result<LLM> {
+        let system_message = args.llm_system_message().trim().to_owned();
         let path = ApiBuilder::from_env()
             .with_progress(true)
             .build()?
-            .model(REPO.into())
-            .get(MODEL.into())?;
+            .model(args.llm_repo().into())
+            .get(args.llm_file().into())?;
         let backend = LlamaBackend::init()?;
         let sampler = LlamaSampler::chain_simple([
-            LlamaSampler::temp(1.0),
-            LlamaSampler::top_p(0.95, 1),
-            LlamaSampler::top_k(20),
-            LlamaSampler::min_p(0.0, 1),
-            LlamaSampler::penalties(-1, 1.0, 0.0, 1.5),
-            LlamaSampler::dist(42),
+            LlamaSampler::temp(args.llm_temp()),
+            LlamaSampler::top_p(args.llm_top_p(), 1),
+            LlamaSampler::top_k(args.llm_top_k()),
+            LlamaSampler::min_p(args.llm_min_p(), 1),
+            LlamaSampler::penalties(
+                args.llm_penalty_length(),
+                args.llm_penalty_repeat(),
+                args.llm_penalty_freq(),
+                args.llm_penalty_present(),
+            ),
+            LlamaSampler::dist(args.llm_seed()),
         ]);
 
         // load model and drop to cache it in ram
@@ -55,6 +50,7 @@ impl LLM {
 
         Ok(Self {
             path,
+            system_message,
             backend,
             sampler,
         })
@@ -70,7 +66,7 @@ impl LLM {
         let messages = json!([
             {
                 "role": "system",
-                "content": SYSTEM_MESSAGE.trim()
+                "content": &self.system_message,
             },
             {
                 "role": "user",
@@ -143,7 +139,7 @@ fn model_params() -> LlamaModelParams {
 
 fn ctx_params() -> LlamaContextParams {
     LlamaContextParams::default()
-        .with_n_ctx(NonZeroU32::new(32 * 1024))
+        .with_n_ctx(NonZeroU32::new(16 * 1024))
         .with_n_batch(2048)
         .with_n_ubatch(2048)
         .with_flash_attention_policy(1)

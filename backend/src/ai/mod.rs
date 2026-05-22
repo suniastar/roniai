@@ -1,6 +1,7 @@
 use crate::ai::llm::LLM;
 use crate::ai::tts::TTS;
 use crate::ai::tts::sample::Sample;
+use crate::args::Args;
 use crate::state::AppState;
 use anyhow::Result;
 use qwen3_tts::AudioBuffer;
@@ -20,9 +21,9 @@ pub struct AI {
 }
 
 impl AI {
-    pub fn new(state: AppState) -> Result<Self> {
-        let llm = LLM::new()?;
-        let tts = TTS::new()?;
+    pub fn new(args: &Args, state: AppState) -> Result<Self> {
+        let llm = LLM::new(args)?;
+        let tts = TTS::new(args)?;
         Ok(Self { state, llm, tts })
     }
 

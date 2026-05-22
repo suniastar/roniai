@@ -6,8 +6,7 @@ use crate::websocket::WebsocketClient;
 use anyhow::Result;
 use clap::Parser;
 use rand::{Rng, rng};
-use tracing::{error, info, warn};
-use tracing_subscriber::filter::LevelFilter;
+use tracing::{debug, error, info, warn};
 use tracing_subscriber::fmt::Layer as FmtLayer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -24,6 +23,7 @@ mod websocket;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args = Args::parse();
     tracing_subscriber::registry()
         .with(
             FmtLayer::new()
@@ -36,15 +36,16 @@ async fn main() -> Result<()> {
                 .with_target(true)
                 .with_filter(
                     EnvFilter::builder()
-                        .with_default_directive(LevelFilter::INFO.into())
+                        .with_default_directive(args.log_level().into())
                         .from_env_lossy(),
                 ),
         )
         .try_init()?;
+    info!("starting with: {}", args);
+    debug!("debug args: {args:?}");
 
-    let args = Args::parse();
     let state = AppStateInner::load(&args).await?;
-    let mut ai = AI::new(state.clone())?;
+    let mut ai = AI::new(&args, state.clone())?;
 
     let mut client = match WebsocketClient::start(state.clone()).await {
         Err(e) => {

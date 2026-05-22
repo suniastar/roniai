@@ -1,3 +1,6 @@
+# Runtime settings
+/persistent.json
+
 # Rust binaries
 /target
 
