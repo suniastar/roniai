@@ -3,13 +3,13 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { ArrayQueue, ConstantBackoff, WebsocketBuilder } from 'websocket-ts';
-	import { decodeMessage } from '$lib/types/message';
+	import { decodeMessage, playbackAudio } from '$lib/types/message';
+	import { PUBLIC_WEBSOCKET_URL } from '$env/static/public';
 	import Roni from '$lib/components/roni.svelte';
 	import check from '$lib/icons/check.svg';
 	import rotate from '$lib/icons/rotate.svg';
 	import triangle from '$lib/icons/triangle_exclamation.svg';
 	import xmark from '$lib/icons/xmark.svg';
-	import { playbackAudio } from '$lib/types/message.ts';
 
 	let audioContext: AudioContext | null = null;
 	onMount(() => {
@@ -68,7 +68,7 @@
 	};
 
 	// websocket
-	const ws = new WebsocketBuilder('ws://localhost:8080/ws/mrsroni')
+	new WebsocketBuilder(PUBLIC_WEBSOCKET_URL)
 		.withInstantReconnect(true)
 		.withBuffer(new ArrayQueue())
 		.withBackoff(new ConstantBackoff(1000))

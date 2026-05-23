@@ -87,6 +87,7 @@ impl AppStateInner {
         self.client_secret.as_ref()
     }
 
+    #[allow(unused)]
     pub fn app_token(&self) -> &AppAccessToken {
         &self.app_token
     }

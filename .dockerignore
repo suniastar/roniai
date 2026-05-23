@@ -1,0 +1,32 @@
+# Runtime settings
+/persistent.json
+
+# Rust binaries
+target
+
+# Svelte output
+node_modules
+build
+.output
+.vercel
+.netlify
+.wrangler
+.svelte-kit
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# IDEA IDEs
+/.idea
+*.iml
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
+
+# OS
+.DS_Store
+Thumbs.db

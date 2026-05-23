@@ -5,11 +5,6 @@ help:
 
 dependencies: ## Installs all optional cargo tools
 	cargo install cargo-edit
-	cargo install cargo-udeps
-	cargo install samply
-
-prepare: ## Preclones the voice samples for easier use later on.
-	cargo run --package voice --bin voice
 
 build: ## Builds a new debug build
 	cargo build
@@ -19,9 +14,9 @@ build-release: ## Builds a new release build
 	cargo build --release
 	npm run build
 
-build-profiling: ## Builds a new profiling build
-	cargo build --profiling
-	npm run build
+build-docker: ## Builds a release docker build
+	docker build --tag test/frontend:local --file ./deploy/docker/frontend.dockerfile .
+	docker build --tag test/backend:local --file ./deploy/docker/backend.dockerfile .
 
 test: ## Runs all test suites
 	mkdir -p ./backend/target
@@ -37,10 +32,6 @@ lint: ## Checks for any syntactic sugar
 
 upgrade: ## Upgrades all project dependencies
 	cargo upgrade --verbose
-	npm update --save
-
-udeps: ## Find unused dependencies
-	cargo +nightly udeps
 
 clean: ## Cleans any intermediate build data
 	cargo clean

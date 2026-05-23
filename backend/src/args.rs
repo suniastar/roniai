@@ -183,6 +183,7 @@ impl Args {
         self.tts_low_quality
     }
 
+    #[cfg(test)]
     pub fn sample_args_with_low_tts() -> Self {
         Self {
             tts_low_quality: true,
@@ -190,6 +191,7 @@ impl Args {
         }
     }
 
+    #[cfg(test)]
     pub fn sample_args_with_high_tts() -> Self {
         Self {
             tts_low_quality: false,
@@ -197,6 +199,7 @@ impl Args {
         }
     }
 
+    #[cfg(test)]
     fn sample() -> Self {
         Self {
             twitch_client_id: "".to_string(),
