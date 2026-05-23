@@ -12,7 +12,9 @@ use twitch_api::types::UserIdRef;
 pub enum Sample {
     Mrsroni = 0,
     AylinCel,
+    Jerzy,
     Onlyjson,
+    RubySpell,
     Whitecharline,
 }
 
@@ -21,7 +23,9 @@ impl Display for Sample {
         match self {
             Self::Mrsroni => write!(f, "mrsroni"),
             Self::AylinCel => write!(f, "aylin_cel"),
+            Self::Jerzy => write!(f, "jerzy"),
             Self::Onlyjson => write!(f, "onlyjson"),
+            Self::RubySpell => write!(f, "ruby_spell"),
             Self::Whitecharline => write!(f, "whitecharline"),
         }
     }
@@ -32,7 +36,9 @@ impl Sample {
         &[
             Self::Mrsroni,
             Self::AylinCel,
+            Self::Jerzy,
             Self::Onlyjson,
+            Self::RubySpell,
             Self::Whitecharline,
         ]
     }
@@ -66,7 +72,9 @@ impl Sample {
         match self {
             Self::Mrsroni => include_str!("samples/mrsroni.txt"),
             Self::AylinCel => include_str!("samples/aylin_cel.txt"),
+            Self::Jerzy => include_str!("samples/jerzy.txt"),
             Self::Onlyjson => include_str!("samples/onlyjson.txt"),
+            Self::RubySpell => include_str!("samples/ruby_spell.txt"),
             Self::Whitecharline => include_str!("samples/whitecharline.txt"),
         }
     }
@@ -75,7 +83,9 @@ impl Sample {
         match self {
             Self::Mrsroni => include_bytes!("samples/mrsroni.wav"),
             Self::AylinCel => include_bytes!("samples/aylin_cel.wav"),
+            Self::Jerzy => include_bytes!("samples/jerzy.wav"),
             Self::Onlyjson => include_bytes!("samples/onlyjson.wav"),
+            Self::RubySpell => include_bytes!("samples/ruby_spell.wav"),
             Self::Whitecharline => include_bytes!("samples/whitecharline.wav"),
         }
     }
@@ -88,7 +98,9 @@ impl TryFrom<&UserIdRef> for Sample {
         match value.as_str() {
             "501133499" => Ok(Self::Mrsroni),
             "1252866592" => Ok(Self::AylinCel),
+            "765006197" => Ok(Self::Jerzy),
             "198939622" => Ok(Self::Onlyjson),
+            "773366406" => Ok(Self::RubySpell),
             "157225932" => Ok(Self::Whitecharline),
             _ => bail!("Unknown user id reference {}", value),
         }
