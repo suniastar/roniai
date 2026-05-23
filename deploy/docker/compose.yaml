@@ -1,0 +1,13 @@
+name: roniai
+services:
+  frontend:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/frontend.dockerfile
+      tags:
+        - roniai/frontend:local
+      args:
+        - PUBLIC_WEBSOCKET_URL=ws://roniai-frontend.mrsroni.de/ws/mrsroni
+    restart: unless-stopped
+    ports:
+      - "80:80"
