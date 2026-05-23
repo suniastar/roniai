@@ -1,11 +1,9 @@
-use crate::ai::tts::sample::Sample;
 use crate::args::Args;
 use crate::twitch::{TWITCH_BOT_SCOPES, default_helix_client};
 use anyhow::Result;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_reader as json_deserialize, to_writer as json_serialize};
-use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
@@ -18,7 +16,7 @@ use twitch_api::HelixClient;
 use twitch_api::twitch_oauth2::{
     AppAccessToken, ClientId, ClientIdRef, ClientSecret, ClientSecretRef, RefreshToken, UserToken,
 };
-use twitch_api::types::{RewardId, UserId, UserIdRef};
+use twitch_api::types::RewardId;
 
 pub type AppState = Arc<RwLock<AppStateInner>>;
 
@@ -30,7 +28,6 @@ pub struct AppStateInner {
     app_token: AppAccessToken,
     user_token: Option<UserToken>,
     reward_id: Option<RewardId>,
-    voice_by_user_id: HashMap<UserId, Sample>,
 }
 
 impl AppStateInner {
@@ -106,10 +103,6 @@ impl AppStateInner {
         self.reward_id.as_ref()
     }
 
-    pub fn voice_by_user_id(&self, user_id: &UserIdRef) -> Option<Sample> {
-        self.voice_by_user_id.get(user_id).map(|s| *s)
-    }
-
     pub async fn refresh_app_token(&mut self, helix: &HelixClient<'static, Client>) -> Result<()> {
         let app_token = AppAccessToken::get_app_access_token(
             helix.get_client(),
@@ -134,7 +127,6 @@ impl AppStateInner {
             TWITCH_BOT_SCOPES.to_vec(),
         )
         .await?;
-        let voice_by_user_id = HashMap::new();
         Ok(Self {
             path,
             client_id,
@@ -142,7 +134,6 @@ impl AppStateInner {
             app_token,
             user_token: None,
             reward_id: None,
-            voice_by_user_id,
         })
     }
 }
@@ -151,7 +142,6 @@ impl AppStateInner {
 struct PersistentState {
     refresh_token: Option<RefreshToken>,
     reward_id: Option<RewardId>,
-    voice_by_user_id: HashMap<UserId, Sample>,
 }
 
 impl PersistentState {
@@ -169,7 +159,6 @@ impl PersistentState {
             state.user_token = Some(token);
         }
         state.reward_id = self.reward_id;
-        state.voice_by_user_id = self.voice_by_user_id;
         Ok(())
     }
 }
@@ -182,7 +171,6 @@ impl From<&AppStateInner> for PersistentState {
                 .as_ref()
                 .and_then(|t| t.refresh_token.clone()),
             reward_id: value.reward_id.clone(),
-            voice_by_user_id: value.voice_by_user_id.clone(),
         }
     }
 }

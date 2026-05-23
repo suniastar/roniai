@@ -182,6 +182,43 @@ impl Args {
     pub fn tts_low_quality(&self) -> bool {
         self.tts_low_quality
     }
+
+    pub fn sample_args_with_low_tts() -> Self {
+        Self {
+            tts_low_quality: true,
+            ..Self::sample()
+        }
+    }
+
+    pub fn sample_args_with_high_tts() -> Self {
+        Self {
+            tts_low_quality: false,
+            ..Self::sample()
+        }
+    }
+
+    fn sample() -> Self {
+        Self {
+            twitch_client_id: "".to_string(),
+            twitch_client_secret: "".to_string(),
+            log_level: LevelFilter::INFO,
+            persistent: "./target/persistent.json".into(),
+            port: 8080,
+            llm_repo: "unsloth/Qwen3.5-9B-GGUF".into(),
+            llm_file: "Qwen3.5-9B-Q8_0.gguf".into(),
+            llm_system_message: DEFAULT_SYSTEM_MESSAGE.into(),
+            llm_temp: 1.0,
+            llm_top_p: 0.95,
+            llm_top_k: 20,
+            llm_min_p: 0.0,
+            llm_penalty_length: -1,
+            llm_penalty_repeat: 1.0,
+            llm_penalty_freq: 0.0,
+            llm_penalty_present: 1.5,
+            llm_seed: 42,
+            tts_low_quality: false,
+        }
+    }
 }
 
 impl Display for Args {

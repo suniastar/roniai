@@ -2,7 +2,7 @@
 /persistent.json
 
 # Rust binaries
-/target
+target
 
 # Svelte output
 node_modules

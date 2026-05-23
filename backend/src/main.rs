@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
     debug!("debug args: {args:?}");
 
     let state = AppStateInner::load(&args).await?;
-    let mut ai = AI::new(&args, state.clone())?;
+    let mut ai = AI::new(&args)?;
 
     let mut client = match WebsocketClient::start(state.clone()).await {
         Err(e) => {

@@ -24,7 +24,8 @@ build-profiling: ## Builds a new profiling build
 	npm run build
 
 test: ## Runs all test suites
-	cargo test --all
+	mkdir -p ./backend/target
+	cargo test --all -- --test-threads=1 --nocapture
 
 fmt: ## Formats the source code
 	cargo fmt --all

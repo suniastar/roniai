@@ -4,45 +4,55 @@ use qwen3_tts::AudioBuffer;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as FmtResult};
-
-const MASK: u32 = u8::MAX as u32;
+use twitch_api::types::UserIdRef;
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize, Deserialize)]
 #[serde(rename = "snake_case")]
 #[repr(u8)]
 pub enum Sample {
-    Roni = 0,
-    Json,
+    Mrsroni = 0,
+    AylinCel,
+    Onlyjson,
+    Whitecharline,
 }
 
 impl Display for Sample {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            Self::Roni => write!(f, "roni"),
-            Self::Json => write!(f, "json"),
-        }
-    }
-}
-
-impl TryFrom<u8> for Sample {
-    type Error = Error;
-
-    fn try_from(value: u8) -> Result<Sample> {
-        const COUNT: u8 = 1;
-        match value % COUNT {
-            0 => Ok(Sample::Json),
-            _ => bail!("Unknown sample {}", value),
+            Self::Mrsroni => write!(f, "mrsroni"),
+            Self::AylinCel => write!(f, "aylin_cel"),
+            Self::Onlyjson => write!(f, "onlyjson"),
+            Self::Whitecharline => write!(f, "whitecharline"),
         }
     }
 }
 
 impl Sample {
-    pub fn random<R>(rng: &mut R) -> Result<Self>
+    pub fn all() -> &'static [Sample] {
+        &[
+            Self::Mrsroni,
+            Self::AylinCel,
+            Self::Onlyjson,
+            Self::Whitecharline,
+        ]
+    }
+
+    pub fn from_user_id_or_random<R>(user_id: &UserIdRef, rng: &mut R) -> Self
     where
         R: Rng,
     {
-        let s: u8 = (rng.next_u32() & MASK) as u8;
-        Ok(s.try_into()?)
+        Self::try_from(user_id).unwrap_or_else(|_| Self::random(rng))
+    }
+
+    pub fn random<R>(rng: &mut R) -> Self
+    where
+        R: Rng,
+    {
+        let r = rng.next_u32() as usize;
+        let l = Self::all().len() - 1;
+        let i = (r % l) + 1;
+        let s = Self::all()[i];
+        s
     }
 
     pub fn ref_audio_ref_text(&self) -> Result<(&'static str, AudioBuffer)> {
@@ -54,15 +64,33 @@ impl Sample {
 
     fn txt(&self) -> &'static str {
         match self {
-            Self::Roni => include_str!("samples/roni.txt"),
-            Self::Json => include_str!("samples/json.txt"),
+            Self::Mrsroni => include_str!("samples/mrsroni.txt"),
+            Self::AylinCel => include_str!("samples/aylin_cel.txt"),
+            Self::Onlyjson => include_str!("samples/onlyjson.txt"),
+            Self::Whitecharline => include_str!("samples/whitecharline.txt"),
         }
     }
 
     fn wav(&self) -> &'static [u8] {
         match self {
-            Self::Roni => include_bytes!("samples/roni.wav"),
-            Self::Json => include_bytes!("samples/json.wav"),
+            Self::Mrsroni => include_bytes!("samples/mrsroni.wav"),
+            Self::AylinCel => include_bytes!("samples/aylin_cel.wav"),
+            Self::Onlyjson => include_bytes!("samples/onlyjson.wav"),
+            Self::Whitecharline => include_bytes!("samples/whitecharline.wav"),
+        }
+    }
+}
+
+impl TryFrom<&UserIdRef> for Sample {
+    type Error = Error;
+
+    fn try_from(value: &UserIdRef) -> Result<Sample> {
+        match value.as_str() {
+            "501133499" => Ok(Self::Mrsroni),
+            "1252866592" => Ok(Self::AylinCel),
+            "198939622" => Ok(Self::Onlyjson),
+            "157225932" => Ok(Self::Whitecharline),
+            _ => bail!("Unknown user id reference {}", value),
         }
     }
 }

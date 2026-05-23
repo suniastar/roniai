@@ -2,7 +2,6 @@ use crate::ai::llm::LLM;
 use crate::ai::tts::TTS;
 use crate::ai::tts::sample::Sample;
 use crate::args::Args;
-use crate::state::AppState;
 use anyhow::Result;
 use qwen3_tts::AudioBuffer;
 use rand::Rng;
@@ -15,16 +14,15 @@ pub mod tts;
 
 #[derive(Debug)]
 pub struct AI {
-    state: AppState,
     llm: LLM,
     tts: TTS,
 }
 
 impl AI {
-    pub fn new(args: &Args, state: AppState) -> Result<Self> {
+    pub fn new(args: &Args) -> Result<Self> {
         let llm = LLM::new(args)?;
         let tts = TTS::new(args)?;
-        Ok(Self { state, llm, tts })
+        Ok(Self { llm, tts })
     }
 
     pub async fn eval<R>(
@@ -37,11 +35,7 @@ impl AI {
         R: Rng,
     {
         let start = Instant::now();
-        let lock = self.state.read().await;
-        let voice = match lock.voice_by_user_id(user_id) {
-            Some(voice) => voice,
-            None => Sample::random(rng)?,
-        };
+        let voice = Sample::from_user_id_or_random(user_id, rng);
         debug!("running prompts with {voice}: {text}");
         let res_text = self.llm.prompt(text)?;
         debug!("response text is: {res_text}");
