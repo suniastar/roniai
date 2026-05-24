@@ -14,9 +14,9 @@
 	} = $props();
 </script>
 
-<enhanced:img alt="Head" src={head} width="400px" height="400px" class={[mirror && 'mirror']} />
+<img alt="Head" src={head} width="400px" height="400px" class={[mirror && 'mirror']} />
 {#if blink}
-	<enhanced:img alt="Blink" src={eyes} width="400px" height="400px" class={[mirror && 'mirror']} />
+	<img alt="Blink" src={eyes} width="400px" height="400px" class={[mirror && 'mirror']} />
 {/if}
 <Mouth {mirror} open={mouthOpen} />
 

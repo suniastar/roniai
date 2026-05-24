@@ -21,7 +21,7 @@
 		in:fly={{ duration: 1000, y: 600, opacity: 1 }}
 		out:fly={{ duration: 1000, y: 600, opacity: 1 }}
 	>
-		<enhanced:img alt="Body" src={body} width="400px" height="400px" />
+		<img alt="Body" src={body} width="400px" height="400px" />
 		<Head {mirror} {blink} {mouthOpen} />
 	</div>
 {/if}

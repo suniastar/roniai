@@ -117,7 +117,7 @@
 	<Roni visible={roniVisible} mirror={roniMirror} blink={roniBlink} mouthOpen={roniMouth}></Roni>
 
 	{#if showRetry.show}
-		<enhanced:img
+		<img
 			in:fade={{ duration: 100 }}
 			out:fade={{ delay: 3000, duration: 250 }}
 			alt="reconnect"
@@ -128,7 +128,7 @@
 		/>
 	{/if}
 	{#if showError.show}
-		<enhanced:img
+		<img
 			in:fade={{ duration: 100 }}
 			out:fade={{ delay: 3000, duration: 250 }}
 			alt="warn"
@@ -139,7 +139,7 @@
 		/>
 	{/if}
 	{#if showClose.show}
-		<enhanced:img
+		<img
 			in:fade={{ duration: 100 }}
 			out:fade={{ delay: 3000, duration: 250 }}
 			alt="error"
@@ -150,7 +150,7 @@
 		/>
 	{/if}
 	{#if showConnected.show}
-		<enhanced:img
+		<img
 			in:fade={{ duration: 100 }}
 			out:fade={{ delay: 3000, duration: 250 }}
 			alt="check"

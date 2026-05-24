@@ -12,21 +12,9 @@
 </script>
 
 {#if open}
-	<enhanced:img
-		alt="Mouth"
-		src={mouth_open}
-		width="400px"
-		height="400px"
-		class={[mirror && 'mirror']}
-	/>
+	<img alt="Mouth" src={mouth_open} width="400px" height="400px" class={[mirror && 'mirror']} />
 {:else}
-	<enhanced:img
-		alt="Mouth"
-		src={mouth_close}
-		width="400px"
-		height="400px"
-		class={[mirror && 'mirror']}
-	/>
+	<img alt="Mouth" src={mouth_close} width="400px" height="400px" class={[mirror && 'mirror']} />
 {/if}
 
 <style>
