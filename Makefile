@@ -16,8 +16,7 @@ build-release: ## Builds a new release build
 	npm run build
 
 build-docker: ## Builds a release docker build
-	docker build --tag test/frontend:local --file ./deploy/docker/frontend.dockerfile .
-	docker build --tag test/backend:local --file ./deploy/docker/backend.dockerfile .
+	docker build --tag roniai/frontend:local --file ./deploy/docker/frontend.dockerfile .
 
 test: ## Runs all test suites
 	mkdir -p ./backend/target
