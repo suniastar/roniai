@@ -57,8 +57,7 @@ impl Sample {
         let r = rng.next_u32() as usize;
         let l = Self::all().len() - 1;
         let i = (r % l) + 1;
-        let s = Self::all()[i];
-        s
+        Self::all()[i]
     }
 
     pub fn ref_audio_ref_text(&self) -> Result<(&'static str, AudioBuffer)> {

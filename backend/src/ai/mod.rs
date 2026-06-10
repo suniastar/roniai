@@ -2,12 +2,13 @@ use crate::ai::llm::LLM;
 use crate::ai::tts::TTS;
 use crate::ai::tts::sample::Sample;
 use crate::args::Args;
+use crate::state::AppState;
 use anyhow::Result;
 use qwen3_tts::AudioBuffer;
 use rand::Rng;
 use std::time::Instant;
 use tracing::debug;
-use twitch_api::types::UserIdRef;
+use twitch_api::types::{UserIdRef, UserNameRef};
 
 mod llm;
 pub mod tts;
@@ -19,8 +20,8 @@ pub struct AI {
 }
 
 impl AI {
-    pub fn new(args: &Args) -> Result<Self> {
-        let llm = LLM::new(args)?;
+    pub fn new(state: AppState, args: &Args) -> Result<Self> {
+        let llm = LLM::new(state, args)?;
         let tts = TTS::new(args)?;
         Ok(Self { llm, tts })
     }
@@ -29,6 +30,7 @@ impl AI {
         &mut self,
         rng: &mut R,
         user_id: &UserIdRef,
+        user_name: &UserNameRef,
         text: &str,
     ) -> Result<AIResponse>
     where
@@ -37,7 +39,7 @@ impl AI {
         let start = Instant::now();
         let voice = Sample::from_user_id_or_random(user_id, rng);
         debug!("running prompts with {voice}: {text}");
-        let res_text = self.llm.prompt(text)?;
+        let res_text = self.llm.prompt(user_name, text).await?;
         debug!("response text is: {res_text}");
         let (req, res) = self.tts.prompt(voice, text, &res_text)?;
         debug!("complete. took {}s", start.elapsed().as_secs());

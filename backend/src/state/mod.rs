@@ -100,6 +100,10 @@ impl AppStateInner {
         self.user_token.as_ref()
     }
 
+    pub fn mut_user_token(&mut self) -> &mut Option<UserToken> {
+        &mut self.user_token
+    }
+
     pub fn reward_id(&self) -> Option<&RewardId> {
         self.reward_id.as_ref()
     }

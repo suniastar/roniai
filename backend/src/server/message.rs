@@ -27,7 +27,7 @@ impl Message {
         Message::Say {
             id,
             req_wav: res.request_wav.into(),
-            res_txt: res.response_text.into(),
+            res_txt: res.response_text,
             res_wav: res.response_wav.into(),
         }
     }

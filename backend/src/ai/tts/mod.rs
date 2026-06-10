@@ -31,11 +31,11 @@ impl TTS {
             .with_progress(true)
             .build()?
             .model(repo);
-        api_repo.get(CONFIG.into())?;
-        api_repo.get(VOCAB.into())?;
-        api_repo.get(MERGES.into())?;
-        let model_path = api_repo.get(FILE.into())?;
-        api_repo.get(TOKEN_FILE.into())?;
+        api_repo.get(CONFIG)?;
+        api_repo.get(VOCAB)?;
+        api_repo.get(MERGES)?;
+        let model_path = api_repo.get(FILE)?;
+        api_repo.get(TOKEN_FILE)?;
         let model_directory: String = model_path
             .parent()
             .context("no parent dir")?

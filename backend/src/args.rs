@@ -3,16 +3,6 @@ use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 use std::path::PathBuf;
 use tracing_subscriber::filter::LevelFilter;
 
-const DEFAULT_SYSTEM_MESSAGE: &str = r#"
-Du bist Roni AI.
-Eine künstliche Intelligenz, welche sich genau wie die echte Roni (auch MrsRoni, Bella oder Tonne genannt) verhalten soll.
-Roni, und dadurch auch du, bist ein streamer, welcher hauptsächlich GTA RP auf Narco City spielt.
-Ab und zu, spielst du mit Freunden und Zuschauern aber auch VALORANT, League of Legends und andere Spiele.
-Du antwortest in einem passiven aggressiven Tonfall und versuchst dabei, deine Zuschauer ein bisschen zu roasten.
-Wenn nicht anders angegeben, antwortest du nur auf Deutsch, aber du kannst Wörter aus anderen Sprachen verwenden, wenn sie passen.
-Versuche, deine Antwort so kurz wie möglich und in einem menschenähnlichen Stil zu halten und vermeide Punktlisten und Emojis.
-"#;
-
 #[derive(Debug, Parser)]
 pub struct Args {
     #[arg(long, env, help = "The twitch client id", required = true)]
@@ -40,11 +30,14 @@ pub struct Args {
     )]
     port: u16,
 
+    #[arg(long, env, help = "The GPU id the models should run on")]
+    gpu: Option<usize>,
+
     #[arg(
         long,
         env,
         help = "The huggingface repo of the llm",
-        default_value = "unsloth/Qwen3.5-9B-GGUF"
+        default_value = "mradermacher/MN-Violet-Lotus-12B-GGUF"
     )]
     llm_repo: String,
 
@@ -52,17 +45,9 @@ pub struct Args {
         long,
         env,
         help = "The huggingface llm model file within the repo",
-        default_value = "Qwen3.5-9B-Q8_0.gguf"
+        default_value = "MN-Violet-Lotus-12B.Q4_K_M.gguf"
     )]
     llm_file: String,
-
-    #[arg(
-    long,
-    env,
-    help="The LLM's system message infront of every query.",
-    default_value = DEFAULT_SYSTEM_MESSAGE,
-    )]
-    llm_system_message: String,
 
     #[arg(long, env, help = "The LLM's temperature", default_value_t = 1.0)]
     llm_temp: f32,
@@ -131,16 +116,16 @@ impl Args {
         self.port
     }
 
+    pub fn gpu(&self) -> Option<usize> {
+        self.gpu
+    }
+
     pub fn llm_repo(&self) -> &str {
         &self.llm_repo
     }
 
     pub fn llm_file(&self) -> &str {
         &self.llm_file
-    }
-
-    pub fn llm_system_message(&self) -> &str {
-        &self.llm_system_message
     }
 
     pub fn llm_temp(&self) -> f32 {
@@ -207,9 +192,9 @@ impl Args {
             log_level: LevelFilter::INFO,
             persistent: "./target/persistent.json".into(),
             port: 8080,
-            llm_repo: "unsloth/Qwen3.5-9B-GGUF".into(),
-            llm_file: "Qwen3.5-9B-Q8_0.gguf".into(),
-            llm_system_message: DEFAULT_SYSTEM_MESSAGE.into(),
+            gpu: None,
+            llm_repo: "mradermacher/MN-Violet-Lotus-12B-GGUF".into(),
+            llm_file: "MN-Violet-Lotus-12B.Q4_K_M.gguf".into(),
             llm_temp: 1.0,
             llm_top_p: 0.95,
             llm_top_k: 20,
@@ -228,12 +213,16 @@ impl Display for Args {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(
             f,
-            "--twitch-client-id {} --twitch-client-secret {} --log-level {} --persistent {} --port {} --llm-repo {} --llm-file {} --llm-system-message [redacted] --llm-temp {} --llm-top-p {} --llm-top-k {} --llm-min-p {} --llm-penalty-length {} --llm-peanalty-repeat {} --llm-penalty-freq {} --llm-penalty-present {} --llm-seed {} --tts-low-quality {}",
+            "--twitch-client-id {} --twitch-client-secret {} --log-level {} --persistent {} --port {} --gpu {} --llm-repo {} --llm-file {} --llm-temp {} --llm-top-p {} --llm-top-k {} --llm-min-p {} --llm-penalty-length {} --llm-peanalty-repeat {} --llm-penalty-freq {} --llm-penalty-present {} --llm-seed {} --tts-low-quality {}",
             self.twitch_client_id,
             self.twitch_client_secret,
             self.log_level,
             self.persistent.display(),
             self.port,
+            self.gpu
+                .as_ref()
+                .map(<usize>::to_string)
+                .unwrap_or(String::from("null")),
             self.llm_repo,
             self.llm_file,
             self.llm_temp,

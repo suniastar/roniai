@@ -10,3 +10,20 @@ lto = true
 [profile.profiling]
 inherits = "release"
 debug = true
+
+[workspace.dependencies]
+candle-core = "0.10.2"
+candle-flash-attn = "0.10.2"
+candle-kernels = "0.10.2"
+candle-nn = "0.10.2"
+candle-transformers = "0.10.2"
+candle-ug = "0.10.2"
+qwen3-tts = { git = "https://github.com/suniastar/qwen3-tts-rs.git", rev = "66b4ecd06d7ffc00e5eaabc67b9903628a602547" }
+
+[patch.crates-io]
+candle-core = { git = "https://github.com/suniastar/candle", rev = "7cd07d6c579d9289aaeed1b0489b8e8775d1c175" }
+candle-flash-attn = { git = "https://github.com/suniastar/candle", rev = "7cd07d6c579d9289aaeed1b0489b8e8775d1c175" }
+candle-kernels = { git = "https://github.com/suniastar/candle", rev = "7cd07d6c579d9289aaeed1b0489b8e8775d1c175" }
+candle-nn = { git = "https://github.com/suniastar/candle", rev = "7cd07d6c579d9289aaeed1b0489b8e8775d1c175" }
+candle-transformers = { git = "https://github.com/suniastar/candle", rev = "7cd07d6c579d9289aaeed1b0489b8e8775d1c175" }
+candle-ug = { git = "https://github.com/suniastar/candle", rev = "7cd07d6c579d9289aaeed1b0489b8e8775d1c175" }

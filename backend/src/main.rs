@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
     debug!("debug args: {args:?}");
 
     let state = AppStateInner::load(&args).await?;
-    let mut ai = AI::new(&args)?;
+    let mut ai = AI::new(state.clone(), &args)?;
 
     let mut client = match WebsocketClient::start(state.clone()).await {
         Err(e) => {
@@ -72,9 +72,10 @@ async fn main() -> Result<()> {
                                 let id = rng.next_u64();
                                 let req = format!("Hey Roni AI. {}", text);
                                 let user_id = data.chatter_user_id;
+                                let user_name = data.chatter_user_login;
                                 let n1 = server.send_eval(id, req.clone());
                                 info!("send eval \"{text}\" to {n1} clients");
-                                let res = ai.eval(&mut rng, &user_id, &req).await?;
+                                let res = ai.eval(&mut rng, &user_id, &user_name, &req).await?;
                                 let n2 = server.send_say(id, res);
                                 info!("send say to {n2} clients");
                             }
@@ -92,9 +93,12 @@ async fn main() -> Result<()> {
                                             let id = rng.next_u64();
                                             let text = format!("Hey Roni AI. {}", data.user_input);
                                             let user_id = data.user_id;
+                                            let user_name = data.user_login;
                                             let n1 = server.send_eval(id, text.clone());
                                             info!("send eval \"{text}\" to {n1} clients");
-                                            let res = ai.eval(&mut rng, &user_id, &text).await?;
+                                            let res = ai
+                                                .eval(&mut rng, &user_id, &user_name, &text)
+                                                .await?;
                                             let n2 = server.send_say(id, res);
                                             info!("send say to {n2} clients");
                                         }
