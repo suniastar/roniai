@@ -366,7 +366,7 @@ checksum = "1e748733b7cbc798e1434b6ac524f0c1ff2ab456fe201501e6497c8417a4fc33"
 [[package]]
 name = "candle-core"
 version = "0.10.2"
-source = "git+https://github.com/suniastar/candle?rev=7cd07d6c579d9289aaeed1b0489b8e8775d1c175#7cd07d6c579d9289aaeed1b0489b8e8775d1c175"
+source = "git+https://github.com/suniastar/candle?rev=7bb29fa1d1c9f74b5340c282e9349545db62ed9c#7bb29fa1d1c9f74b5340c282e9349545db62ed9c"
 dependencies = [
  "byteorder",
  "candle-kernels",
@@ -375,6 +375,7 @@ dependencies = [
  "float8",
  "gemm 0.19.0",
  "half",
+ "libc",
  "libm",
  "memmap2",
  "num-traits",
@@ -392,7 +393,7 @@ dependencies = [
 [[package]]
 name = "candle-flash-attn"
 version = "0.10.2"
-source = "git+https://github.com/suniastar/candle?rev=7cd07d6c579d9289aaeed1b0489b8e8775d1c175#7cd07d6c579d9289aaeed1b0489b8e8775d1c175"
+source = "git+https://github.com/suniastar/candle?rev=7bb29fa1d1c9f74b5340c282e9349545db62ed9c#7bb29fa1d1c9f74b5340c282e9349545db62ed9c"
 dependencies = [
  "anyhow",
  "candle-core",
@@ -403,7 +404,7 @@ dependencies = [
 [[package]]
 name = "candle-kernels"
 version = "0.10.2"
-source = "git+https://github.com/suniastar/candle?rev=7cd07d6c579d9289aaeed1b0489b8e8775d1c175#7cd07d6c579d9289aaeed1b0489b8e8775d1c175"
+source = "git+https://github.com/suniastar/candle?rev=7bb29fa1d1c9f74b5340c282e9349545db62ed9c#7bb29fa1d1c9f74b5340c282e9349545db62ed9c"
 dependencies = [
  "cudaforge",
 ]
@@ -411,7 +412,7 @@ dependencies = [
 [[package]]
 name = "candle-nn"
 version = "0.10.2"
-source = "git+https://github.com/suniastar/candle?rev=7cd07d6c579d9289aaeed1b0489b8e8775d1c175#7cd07d6c579d9289aaeed1b0489b8e8775d1c175"
+source = "git+https://github.com/suniastar/candle?rev=7bb29fa1d1c9f74b5340c282e9349545db62ed9c#7bb29fa1d1c9f74b5340c282e9349545db62ed9c"
 dependencies = [
  "candle-core",
  "half",
@@ -426,7 +427,7 @@ dependencies = [
 [[package]]
 name = "candle-transformers"
 version = "0.10.2"
-source = "git+https://github.com/suniastar/candle?rev=7cd07d6c579d9289aaeed1b0489b8e8775d1c175#7cd07d6c579d9289aaeed1b0489b8e8775d1c175"
+source = "git+https://github.com/suniastar/candle?rev=7bb29fa1d1c9f74b5340c282e9349545db62ed9c#7bb29fa1d1c9f74b5340c282e9349545db62ed9c"
 dependencies = [
  "byteorder",
  "candle-core",
@@ -444,7 +445,7 @@ dependencies = [
 [[package]]
 name = "candle-ug"
 version = "0.10.2"
-source = "git+https://github.com/suniastar/candle?rev=7cd07d6c579d9289aaeed1b0489b8e8775d1c175#7cd07d6c579d9289aaeed1b0489b8e8775d1c175"
+source = "git+https://github.com/suniastar/candle?rev=7bb29fa1d1c9f74b5340c282e9349545db62ed9c#7bb29fa1d1c9f74b5340c282e9349545db62ed9c"
 dependencies = [
  "ug",
  "ug-cuda",
