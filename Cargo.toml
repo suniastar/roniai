@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "backend",
+    "voice",
 ]
 
 [profile.release]
@@ -19,6 +20,7 @@ candle-nn = "0.10.2"
 candle-transformers = "0.10.2"
 candle-ug = "0.10.2"
 qwen3-tts = { git = "https://github.com/suniastar/qwen3-tts-rs.git", rev = "66b4ecd06d7ffc00e5eaabc67b9903628a602547" }
+voice = { path = "./voice" }
 
 [patch.crates-io]
 candle-core = { git = "https://github.com/suniastar/candle", rev = "7bb29fa1d1c9f74b5340c282e9349545db62ed9c" }

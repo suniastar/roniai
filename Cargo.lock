@@ -261,7 +261,6 @@ dependencies = [
  "clap",
  "futures-util",
  "hf-hub",
- "hound",
  "qwen3-tts",
  "rand 0.10.1",
  "reqwest 0.13.4",
@@ -275,6 +274,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "twitch_api",
+ "voice",
 ]
 
 [[package]]
@@ -3993,6 +3993,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "voice"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "candle-core",
+ "hf-hub",
+ "qwen3-tts",
 ]
 
 [[package]]

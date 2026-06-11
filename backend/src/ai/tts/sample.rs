@@ -1,10 +1,11 @@
 use anyhow::{Error, Result, bail};
-use hound::{SampleFormat, WavReader};
-use qwen3_tts::AudioBuffer;
+use candle_core::Device;
+use qwen3_tts::VoiceClonePrompt;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use twitch_api::types::UserIdRef;
+use voice::load_cloned_voice;
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize, Deserialize)]
 #[serde(rename = "snake_case")]
@@ -60,32 +61,26 @@ impl Sample {
         Self::all()[i]
     }
 
-    pub fn ref_audio_ref_text(&self) -> Result<(&'static str, AudioBuffer)> {
-        let text = self.txt();
-        let wav = self.wav();
-        let audio = load_wav(wav)?;
-        Ok((text, audio))
+    pub fn voice_clone_prompt(&self, device: &Device, low: bool) -> Result<VoiceClonePrompt> {
+        let bytes = self.vox(low);
+        let prompt = load_cloned_voice(bytes, device)?;
+        Ok(prompt)
     }
 
-    fn txt(&self) -> &'static str {
-        match self {
-            Self::Mrsroni => include_str!("samples/mrsroni.txt"),
-            Self::AylinCel => include_str!("samples/aylin_cel.txt"),
-            Self::Jerzy => include_str!("samples/jerzy.txt"),
-            Self::Onlyjson => include_str!("samples/onlyjson.txt"),
-            Self::RubySpell => include_str!("samples/ruby_spell.txt"),
-            Self::Whitecharline => include_str!("samples/whitecharline.txt"),
-        }
-    }
-
-    fn wav(&self) -> &'static [u8] {
-        match self {
-            Self::Mrsroni => include_bytes!("samples/mrsroni.wav"),
-            Self::AylinCel => include_bytes!("samples/aylin_cel.wav"),
-            Self::Jerzy => include_bytes!("samples/jerzy.wav"),
-            Self::Onlyjson => include_bytes!("samples/onlyjson.wav"),
-            Self::RubySpell => include_bytes!("samples/ruby_spell.wav"),
-            Self::Whitecharline => include_bytes!("samples/whitecharline.wav"),
+    fn vox(&self, low: bool) -> &'static [u8] {
+        match (self, low) {
+            (Self::Mrsroni, false) => include_bytes!("sample/mrsroni_high.vox"),
+            (Self::Mrsroni, true) => include_bytes!("sample/mrsroni_low.vox"),
+            (Self::AylinCel, false) => include_bytes!("sample/aylin_cel_high.vox"),
+            (Self::AylinCel, true) => include_bytes!("sample/aylin_cel_low.vox"),
+            (Self::Jerzy, false) => include_bytes!("sample/jerzy_high.vox"),
+            (Self::Jerzy, true) => include_bytes!("sample/jerzy_low.vox"),
+            (Self::Onlyjson, false) => include_bytes!("sample/onlyjson_high.vox"),
+            (Self::Onlyjson, true) => include_bytes!("sample/onlyjson_low.vox"),
+            (Self::RubySpell, false) => include_bytes!("sample/ruby_spell_high.vox"),
+            (Self::RubySpell, true) => include_bytes!("sample/ruby_spell_low.vox"),
+            (Self::Whitecharline, false) => include_bytes!("sample/whitecharline_high.vox"),
+            (Self::Whitecharline, true) => include_bytes!("sample/whitecharline_low.vox"),
         }
     }
 }
@@ -104,38 +99,4 @@ impl TryFrom<&UserIdRef> for Sample {
             _ => bail!("Unknown user id reference {}", value),
         }
     }
-}
-
-fn load_wav(bytes: &[u8]) -> Result<AudioBuffer> {
-    let reader = WavReader::new(bytes)?;
-
-    let spec = reader.spec();
-    let sample_rate = spec.sample_rate;
-    let channels = spec.channels as usize;
-
-    let samples: Vec<f32> = match spec.sample_format {
-        SampleFormat::Float => reader
-            .into_samples::<f32>()
-            .collect::<Result<Vec<_>, _>>()?,
-        SampleFormat::Int => {
-            let bits = spec.bits_per_sample;
-            let max_val = (1 << (bits - 1)) as f32;
-            reader
-                .into_samples::<i32>()
-                .map(|s| s.map(|v| v as f32 / max_val))
-                .collect::<Result<Vec<_>, _>>()?
-        }
-    };
-
-    // Convert to mono by averaging channels
-    let mono_samples = if channels > 1 {
-        samples
-            .chunks(channels)
-            .map(|chunk| chunk.iter().sum::<f32>() / channels as f32)
-            .collect()
-    } else {
-        samples
-    };
-
-    Ok(AudioBuffer::new(mono_samples, sample_rate))
 }

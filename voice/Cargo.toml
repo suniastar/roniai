@@ -1,0 +1,13 @@
+[package]
+name = "voice"
+authors = ["Frederik Enste <frederik@fenste.de>"]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95.0"
+publish = false
+
+[dependencies]
+anyhow = "1.0.102"
+candle-core = { workspace = true, features = ["cuda", "cudnn"] }
+hf-hub = "0.5.0"
+qwen3-tts = { workspace = true, features = ["cuda", "flash-attn"] }
