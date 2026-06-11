@@ -29,7 +29,7 @@ pub struct LLM {
     device: Device,
     path: PathBuf,
     logits_processor: LogitsProcessor,
-    penalty_length: i32,
+    penalty_length: Option<usize>,
     penalty_repeat: f32,
     penalty_freq: f32,
     penalty_present: f32,
@@ -48,14 +48,14 @@ impl LLM {
             .build()?
             .model(args.llm_repo().into())
             .get(args.llm_file())?;
-        let logits_processor = LogitsProcessor::from_sampling(
-            args.llm_seed() as u64,
-            Sampling::TopKThenTopP {
-                k: args.llm_top_k() as usize,
-                p: args.llm_top_p() as f64,
-                temperature: args.llm_temp() as f64,
-            },
-        );
+        let temperature = args.llm_temp();
+        let sampling = match (args.llm_top_k(), args.llm_top_p()) {
+            (None, None) => Sampling::ArgMax,
+            (None, Some(p)) => Sampling::TopP { p, temperature },
+            (Some(k), None) => Sampling::TopK { k, temperature },
+            (Some(k), Some(p)) => Sampling::TopKThenTopP { k, p, temperature },
+        };
+        let logits_processor = LogitsProcessor::from_sampling(args.llm_seed() as u64, sampling);
         Ok(Self {
             state,
             helix,
@@ -102,10 +102,10 @@ impl LLM {
             let input = Tensor::new(&[next_token], &self.device)?.unsqueeze(0)?;
             let mut logits = weights.forward(&input, tokens.len() + index)?.squeeze(0)?;
             if self.penalty_repeat != 1. {
-                let start_at = match self.penalty_length {
-                    l if l < 0 => 0,
-                    l => answer.len().saturating_sub(l as usize),
-                };
+                let start_at = self
+                    .penalty_length
+                    .map(|l| answer.len().saturating_sub(l))
+                    .unwrap_or(0);
                 logits = apply_repeat_penalty(&logits, self.penalty_repeat, &answer[start_at..])?;
             }
             next_token = self.logits_processor.sample(&logits)?;

@@ -49,33 +49,33 @@ pub struct Args {
     )]
     llm_file: String,
 
-    #[arg(long, env, help = "The LLM's temperature", default_value_t = 1.0)]
-    llm_temp: f32,
+    #[arg(long, env, help = "The LLM's temperature", default_value_t = 0.9)]
+    llm_temp: f64,
 
-    #[arg(long, env, help = "The LLM's top p", default_value_t = 0.95)]
-    llm_top_p: f32,
+    #[arg(long, env, help = "The LLM's top p", default_value = "1")]
+    llm_top_p: Option<f64>,
 
-    #[arg(long, env, help = "The LLM's top k", default_value_t = 20)]
-    llm_top_k: i32,
+    #[arg(long, env, help = "The LLM's top k")]
+    llm_top_k: Option<usize>,
 
-    #[arg(long, env, help = "The LLM's min p", default_value_t = 0.0)]
-    llm_min_p: f32,
+    #[arg(long, env, help = "The LLM's min p", default_value_t = 0.05)]
+    llm_min_p: f64,
 
-    #[arg(long, env, help = "The LLM's penalty window length", default_value_t = -1)]
-    llm_penalty_length: i32,
+    #[arg(long, env, help = "The LLM's penalty window length")]
+    llm_penalty_length: Option<usize>,
 
     #[arg(
         long,
         env,
         help = "The LLM's repetition penalty",
-        default_value_t = 1.0
+        default_value_t = 1.05
     )]
     llm_penalty_repeat: f32,
 
     #[arg(long, env, help = "The LLM's frequency penalty", default_value_t = 0.0)]
     llm_penalty_freq: f32,
 
-    #[arg(long, env, help = "The LLM's preset penalty", default_value_t = 1.5)]
+    #[arg(long, env, help = "The LLM's preset penalty", default_value_t = 0.0)]
     llm_penalty_present: f32,
 
     #[arg(
@@ -128,23 +128,23 @@ impl Args {
         &self.llm_file
     }
 
-    pub fn llm_temp(&self) -> f32 {
+    pub fn llm_temp(&self) -> f64 {
         self.llm_temp
     }
 
-    pub fn llm_top_p(&self) -> f32 {
+    pub fn llm_top_p(&self) -> Option<f64> {
         self.llm_top_p
     }
 
-    pub fn llm_top_k(&self) -> i32 {
+    pub fn llm_top_k(&self) -> Option<usize> {
         self.llm_top_k
     }
 
-    pub fn llm_min_p(&self) -> f32 {
+    pub fn llm_min_p(&self) -> f64 {
         self.llm_min_p
     }
 
-    pub fn llm_penalty_length(&self) -> i32 {
+    pub fn llm_penalty_length(&self) -> Option<usize> {
         self.llm_penalty_length
     }
 
@@ -195,11 +195,11 @@ impl Args {
             gpu: None,
             llm_repo: "mradermacher/MN-Violet-Lotus-12B-GGUF".into(),
             llm_file: "MN-Violet-Lotus-12B.Q4_K_M.gguf".into(),
-            llm_temp: 1.0,
-            llm_top_p: 0.95,
-            llm_top_k: 20,
+            llm_temp: 0.8,
+            llm_top_p: Some(1.0),
+            llm_top_k: None,
             llm_min_p: 0.0,
-            llm_penalty_length: -1,
+            llm_penalty_length: None,
             llm_penalty_repeat: 1.0,
             llm_penalty_freq: 0.0,
             llm_penalty_present: 1.5,
@@ -226,10 +226,19 @@ impl Display for Args {
             self.llm_repo,
             self.llm_file,
             self.llm_temp,
-            self.llm_top_p,
-            self.llm_top_k,
+            self.llm_top_p
+                .as_ref()
+                .map(<f64>::to_string)
+                .unwrap_or(String::from("null")),
+            self.llm_top_k
+                .as_ref()
+                .map(<usize>::to_string)
+                .unwrap_or(String::from("null")),
             self.llm_min_p,
-            self.llm_penalty_length,
+            self.llm_penalty_length
+                .as_ref()
+                .map(<usize>::to_string)
+                .unwrap_or(String::from("null")),
             self.llm_penalty_repeat,
             self.llm_penalty_freq,
             self.llm_penalty_present,
