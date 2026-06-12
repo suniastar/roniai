@@ -19,13 +19,13 @@ candle-kernels = "0.10.2"
 candle-nn = "0.10.2"
 candle-transformers = "0.10.2"
 candle-ug = "0.10.2"
-qwen3-tts = { git = "https://github.com/suniastar/qwen3-tts-rs.git", rev = "66b4ecd06d7ffc00e5eaabc67b9903628a602547" }
+qwen3-tts = { git = "https://github.com/suniastar/qwen3-tts-rs.git", rev = "025332bdae37609ad2930d0862cd068cd2054165" }
 voice = { path = "./voice" }
 
 [patch.crates-io]
-candle-core = { git = "https://github.com/suniastar/candle", rev = "7bb29fa1d1c9f74b5340c282e9349545db62ed9c" }
-candle-flash-attn = { git = "https://github.com/suniastar/candle", rev = "7bb29fa1d1c9f74b5340c282e9349545db62ed9c" }
-candle-kernels = { git = "https://github.com/suniastar/candle", rev = "7bb29fa1d1c9f74b5340c282e9349545db62ed9c" }
-candle-nn = { git = "https://github.com/suniastar/candle", rev = "7bb29fa1d1c9f74b5340c282e9349545db62ed9c" }
-candle-transformers = { git = "https://github.com/suniastar/candle", rev = "7bb29fa1d1c9f74b5340c282e9349545db62ed9c" }
-candle-ug = { git = "https://github.com/suniastar/candle", rev = "7bb29fa1d1c9f74b5340c282e9349545db62ed9c" }
+candle-core = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
+candle-flash-attn = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
+candle-kernels = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
+candle-nn = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
+candle-transformers = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
+candle-ug = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
