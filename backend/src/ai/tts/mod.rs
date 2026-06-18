@@ -6,6 +6,7 @@ use anyhow::{Context, Error, Result};
 use hf_hub::api::sync::ApiBuilder;
 use qwen3_tts::{AudioBuffer, Language, Qwen3TTS, SynthesisOptions, auto_device};
 use std::fs::read_to_string;
+use std::path::PathBuf;
 use std::time::Instant;
 use tokenizers::models::bpe::BPE;
 use tokenizers::normalizers::NFC;
@@ -17,12 +18,6 @@ use tracing::debug;
 
 const REPO_LOW: &str = "Qwen/Qwen3-TTS-12Hz-0.6B-Base";
 const REPO_HIGH: &str = "Qwen/Qwen3-TTS-12Hz-1.7B-Base";
-const CONFIG: &str = "config.json";
-const TOKEN_CONFIG: &str = "tokenizer_config.json";
-const VOCAB: &str = "vocab.json";
-const MERGES: &str = "merges.txt";
-const FILE: &str = "model.safetensors";
-const TOKEN_FILE: &str = "speech_tokenizer/model.safetensors";
 
 /// Pre-tokenizer regex matching Python's `Qwen2Converter` (from `convert_slow_tokenizer.py`).
 const PRETOKENIZE_REGEX: &str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+";
@@ -31,6 +26,7 @@ const PRETOKENIZE_REGEX: &str = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]
 pub struct TTS {
     model_directory: String,
     tokenizer_path: String,
+    seed: u64,
     low: bool,
 }
 
@@ -40,31 +36,19 @@ impl TTS {
             true => REPO_LOW.to_string(),
             false => REPO_HIGH.to_string(),
         };
-        let api_repo = ApiBuilder::from_env()
-            .with_progress(true)
-            .build()?
-            .model(repo);
-        api_repo.get(CONFIG)?;
-        let token_config_path = api_repo
-            .get(TOKEN_CONFIG)
-            .map(|f| Some(f))
-            .unwrap_or_default();
-        let vocab_path = api_repo.get(VOCAB)?;
-        let merges_path = api_repo.get(MERGES)?;
-        let model_path = api_repo.get(FILE)?;
-        api_repo.get(TOKEN_FILE)?;
-        let model_directory: String = model_path
-            .parent()
-            .context("no parent dir")?
-            .canonicalize()?
-            .to_str()
-            .context("invalid path")?
-            .into();
+        let model_dir = download_repo(repo)?;
+        let model_directory = model_dir.to_str().context("invalid model dir")?.to_owned();
 
         // pre-build the tokenizer
         let bpe = BPE::from_file(
-            vocab_path.to_str().context("invalid vocab path")?,
-            merges_path.to_str().context("invalid merges path")?,
+            model_dir
+                .join("vocab.json")
+                .to_str()
+                .context("invalid vocab path")?,
+            model_dir
+                .join("merges.txt")
+                .to_str()
+                .context("invalid merges path")?,
         )
         .unk_token("<|endoftext|>".to_string())
         .byte_fallback(false)
@@ -78,8 +62,9 @@ impl TTS {
         tokenizer.with_pre_tokenizer(Some(Sequence::new(vec![split.into(), byte_level.into()])));
         tokenizer.with_post_processor(Some(ByteLevel::new(false, false, false)));
         tokenizer.with_decoder(Some(ByteLevel::new(false, false, false)));
-        if let Some(config_path) = token_config_path {
-            let content = read_to_string(config_path)?;
+        let token_config_path = model_dir.join("tokenizer_config.json");
+        if token_config_path.try_exists()? {
+            let content = read_to_string(token_config_path)?;
             let config: serde_json::Value = serde_json::from_str(&content)?;
             let added_tokens_decoder = config
                 .get("added_tokens_decoder")
@@ -125,10 +110,7 @@ impl TTS {
                 }
             }
         }
-        let tokenizer_json = model_path
-            .parent()
-            .context("no parent dir")?
-            .join("tokenizer_gen.json");
+        let tokenizer_json = model_dir.join("tokenizer_gen.json");
         tokenizer.save(&tokenizer_json, false).map_err(Error::msg)?;
         let tokenizer_path = tokenizer_json
             .to_str()
@@ -147,6 +129,7 @@ impl TTS {
         Ok(Self {
             model_directory,
             tokenizer_path,
+            seed: args.seed(),
             low: args.tts_low_quality(),
         })
     }
@@ -165,14 +148,14 @@ impl TTS {
         )?;
 
         let start_req = Instant::now();
-        let audio_req = sythesize_voice(&model, self.low, clone, req, Language::German)?;
+        let audio_req = self.sythesize_voice(&model, clone, req, Language::German)?;
         debug!(
             "synthesize question voice clone in {}ms",
             start_req.elapsed().as_millis()
         );
 
         let start_res = Instant::now();
-        let audio_res = sythesize_voice(&model, self.low, Sample::Mrsroni, res, Language::German)?;
+        let audio_res = self.sythesize_voice(&model, Sample::Mrsroni, res, Language::German)?;
         debug!(
             "synthesize response voice clone in {}ms",
             start_res.elapsed().as_millis()
@@ -180,87 +163,209 @@ impl TTS {
 
         Ok((audio_req, audio_res))
     }
-}
 
-fn sythesize_voice(
-    model: &Qwen3TTS,
-    low: bool,
-    sample: Sample,
-    text: &str,
-    language: Language,
-) -> Result<AudioBuffer> {
-    let options = SynthesisOptions {
-        seed: Some(42),
-        ..SynthesisOptions::default()
-    };
-    let prompt = sample.voice_clone_prompt(model.device(), low)?;
-    model.synthesize_voice_clone(text, &prompt, language, Some(options.clone()))
-}
-
-#[cfg(test)]
-const SAMPLE_TEXT_DE: &str = "Dieser Satz soll testen, ob die Technik funktioniert.";
-#[cfg(test)]
-const SAMPLE_TEXT_EN: &str = "This sentence should prove the software's functionality.";
-#[cfg(test)]
-const SAMPLE_TEXT_JP: &str = "この文は、そのソフトウェアの機能を証明するはずです。";
-#[cfg(test)]
-#[test]
-fn test_low_synthesis() {
-    let dir = std::env::current_dir()
-        .expect("no current dir")
-        .join("target");
-    let tts = TTS::new(&Args::sample_args_with_low_tts()).expect("failed to init tts");
-    let device = auto_device().expect("failed to init auto device");
-    let model = Qwen3TTS::from_pretrained_with_tokenizer(&tts.model_directory, None, device)
-        .expect("failed to model");
-
-    for sample in Sample::all() {
-        println!("Synthesize sample {}", sample);
-        let de = sythesize_voice(&model, true, *sample, SAMPLE_TEXT_DE, Language::German)
-            .expect("failed to synthesize german");
-        de.save(dir.join(format!("{}_de_low.wav", sample)))
-            .expect("failed to save german");
-        println!("german done");
-        let en = sythesize_voice(&model, true, *sample, SAMPLE_TEXT_EN, Language::English)
-            .expect("failed to synthesize english");
-        en.save(dir.join(format!("{}_en_low.wav", sample)))
-            .expect("failed to save english");
-        println!("english done");
-        let jp = sythesize_voice(&model, true, *sample, SAMPLE_TEXT_JP, Language::Japanese)
-            .expect("failed to synthesize japanese");
-        jp.save(dir.join(format!("{}_jp_low.wav", sample)))
-            .expect("failed to save japanese");
-        println!("japanese done");
+    fn sythesize_voice(
+        &self,
+        model: &Qwen3TTS,
+        sample: Sample,
+        text: &str,
+        language: Language,
+    ) -> Result<AudioBuffer> {
+        let options = SynthesisOptions {
+            seed: Some(self.seed),
+            ..SynthesisOptions::default()
+        };
+        let prompt = sample.voice_clone_prompt(model.device(), self.low)?;
+        model.synthesize_voice_clone(text, &prompt, language, Some(options.clone()))
     }
 }
 
+fn download_repo(id: impl Into<String>) -> Result<PathBuf> {
+    let repo = ApiBuilder::from_env()
+        .with_progress(true)
+        .build()?
+        .model(id.into());
+    repo.get("speech_tokenizer/config.json")?;
+    repo.get("speech_tokenizer/configuration.json")?;
+    repo.get("speech_tokenizer/model.safetensors")?;
+    repo.get("speech_tokenizer/preprocessor_config.json")?;
+    repo.get("config.json")?;
+    repo.get("generation_config.json")?;
+    repo.get("merges.txt")?;
+    repo.get("model.safetensors")?;
+    repo.get("preprocessor_config.json")?;
+    repo.get("tokenizer_config.json")?;
+    let vocab = repo.get("vocab.json")?;
+    Ok(vocab.parent().context("missing parent")?.to_owned())
+}
+
 #[cfg(test)]
-#[test]
-fn test_high_synthesis() {
-    let dir = std::env::current_dir()
+const SAMPLE_TEXT: &str = "Nur weil ich nach über 1000 Stunden auf Narco immer noch keinen Heli fliegen kann, müsst ihr mich nicht zwingend Tonne nennen.";
+
+#[cfg(test)]
+fn set_up(args: Args) -> (TTS, Qwen3TTS) {
+    let tts = TTS::new(&args).expect("failed to init tts");
+    let device = auto_device().expect("failed to init device");
+    let model = Qwen3TTS::from_pretrained_with_tokenizer(
+        &tts.model_directory,
+        Some(&tts.tokenizer_path),
+        device,
+    )
+    .expect("failed to init model");
+    (tts, model)
+}
+
+#[cfg(test)]
+fn tear_down(audio: AudioBuffer, name: &str) {
+    let path = std::env::current_dir()
         .expect("no current dir")
         .join("target");
-    let tts = TTS::new(&Args::sample_args_with_high_tts()).expect("failed to init tts");
-    let device = auto_device().expect("failed to init auto device");
-    let model = Qwen3TTS::from_pretrained_with_tokenizer(&tts.model_directory, None, device)
-        .expect("failed to model");
-
-    for sample in Sample::all() {
-        println!("Synthesize sample {}", sample);
-        let de = sythesize_voice(&model, false, *sample, SAMPLE_TEXT_DE, Language::German)
-            .expect("failed to synthesize german");
-        de.save(dir.join(format!("{}_de_high.wav", sample)))
-            .expect("failed to save german");
-        println!("german done");
-        let en = sythesize_voice(&model, false, *sample, SAMPLE_TEXT_EN, Language::English)
-            .expect("failed to synthesize english");
-        en.save(dir.join(format!("{}_en_high.wav", sample)))
-            .expect("failed to save english");
-        println!("english done");
-        let jp = sythesize_voice(&model, false, *sample, SAMPLE_TEXT_JP, Language::Japanese)
-            .expect("failed to synthesize japanese");
-        jp.save(dir.join(format!("{}_jp_high.wav", sample)))
-            .expect("failed to save japanese");
-        println!("japanese done");
+    if !path.exists() {
+        std::fs::create_dir_all(&path).expect("failed to create target dir");
     }
+    audio.save(path.join(name)).expect("failed to save audio");
+}
+
+#[cfg(test)]
+#[test]
+fn test_mrsroni_high() {
+    let (tts, model) = set_up(Args::sample_args_with_high_tts());
+
+    let sample = Sample::Mrsroni;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "mrsroni_high.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_mrsroni_low() {
+    let (tts, model) = set_up(Args::sample_args_with_low_tts());
+
+    let sample = Sample::Mrsroni;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "mrsroni_low.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_aylin_cel_high() {
+    let (tts, model) = set_up(Args::sample_args_with_high_tts());
+
+    let sample = Sample::AylinCel;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "aylin_cel_high.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_aylin_cel_low() {
+    let (tts, model) = set_up(Args::sample_args_with_low_tts());
+
+    let sample = Sample::AylinCel;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "aylin_cel_low.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_jerzy_high() {
+    let (tts, model) = set_up(Args::sample_args_with_high_tts());
+
+    let sample = Sample::Jerzy;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "jerzy_high.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_jerzy_low() {
+    let (tts, model) = set_up(Args::sample_args_with_low_tts());
+
+    let sample = Sample::Jerzy;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "jerzy_low.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_onlyjson_high() {
+    let (tts, model) = set_up(Args::sample_args_with_high_tts());
+
+    let sample = Sample::Onlyjson;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "onlyjson_high.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_onlyjson_low() {
+    let (tts, model) = set_up(Args::sample_args_with_low_tts());
+
+    let sample = Sample::Onlyjson;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "onlyjson_low.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_ruby_spell_high() {
+    let (tts, model) = set_up(Args::sample_args_with_high_tts());
+
+    let sample = Sample::RubySpell;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "ruby_spell_high.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_ruby_spell_low() {
+    let (tts, model) = set_up(Args::sample_args_with_low_tts());
+
+    let sample = Sample::RubySpell;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "ruby_spell_low.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_whitecharline_high() {
+    let (tts, model) = set_up(Args::sample_args_with_high_tts());
+
+    let sample = Sample::Whitecharline;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "whitecharline_high.wav");
+}
+
+#[cfg(test)]
+#[test]
+fn test_whitecharline_low() {
+    let (tts, model) = set_up(Args::sample_args_with_low_tts());
+
+    let sample = Sample::Whitecharline;
+    let wave = tts.sythesize_voice(&model, sample, SAMPLE_TEXT, Language::German);
+    assert!(wave.is_ok(), "voice clone failed {}", wave.unwrap_err());
+
+    tear_down(wave.unwrap(), "whitecharline_low.wav");
 }

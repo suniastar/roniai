@@ -81,18 +81,18 @@ pub struct Args {
     #[arg(
         long,
         env,
-        help = "The LLM's sampler starting seed",
-        default_value_t = 42
-    )]
-    llm_seed: u32,
-
-    #[arg(
-        long,
-        env,
         help = "When enabled use Qwen3 TTS 0.6B instead of the more accurate 1.7B",
         default_value_t = false
     )]
     tts_low_quality: bool,
+
+    #[arg(
+        long,
+        env,
+        help = "The LLM's sampler starting seed",
+        default_value_t = 42
+    )]
+    seed: u64,
 }
 
 impl Args {
@@ -160,8 +160,8 @@ impl Args {
         self.llm_penalty_present
     }
 
-    pub fn llm_seed(&self) -> u32 {
-        self.llm_seed
+    pub fn seed(&self) -> u64 {
+        self.seed
     }
 
     pub fn tts_low_quality(&self) -> bool {
@@ -203,8 +203,8 @@ impl Args {
             llm_penalty_repeat: 1.0,
             llm_penalty_freq: 0.0,
             llm_penalty_present: 1.5,
-            llm_seed: 42,
             tts_low_quality: false,
+            seed: 42,
         }
     }
 }
@@ -213,7 +213,7 @@ impl Display for Args {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(
             f,
-            "--twitch-client-id {} --twitch-client-secret {} --log-level {} --persistent {} --port {} --gpu {} --llm-repo {} --llm-file {} --llm-temp {} --llm-top-p {} --llm-top-k {} --llm-min-p {} --llm-penalty-length {} --llm-peanalty-repeat {} --llm-penalty-freq {} --llm-penalty-present {} --llm-seed {} --tts-low-quality {}",
+            "--twitch-client-id {} --twitch-client-secret {} --log-level {} --persistent {} --port {} --gpu {} --llm-repo {} --llm-file {} --llm-temp {} --llm-top-p {} --llm-top-k {} --llm-min-p {} --llm-penalty-length {} --llm-peanalty-repeat {} --llm-penalty-freq {} --llm-penalty-present {} --tts-low-quality {} --seed {}",
             self.twitch_client_id,
             self.twitch_client_secret,
             self.log_level,
@@ -242,8 +242,8 @@ impl Display for Args {
             self.llm_penalty_repeat,
             self.llm_penalty_freq,
             self.llm_penalty_present,
-            self.llm_seed,
             self.tts_low_quality,
+            self.seed,
         )
     }
 }

@@ -23,9 +23,8 @@ qwen3-tts = { git = "https://github.com/suniastar/qwen3-tts-rs.git", rev = "0253
 voice = { path = "./voice" }
 
 [patch.crates-io]
-candle-core = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
-candle-flash-attn = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
-candle-kernels = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
-candle-nn = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
-candle-transformers = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
-candle-ug = { git = "https://github.com/suniastar/candle", rev = "fc1bf98ad2bde0514e88d871352d7e6ee1e1f87a" }
+candle-core = { git = "https://github.com/suniastar/candle", rev = "9f8bdd442bdddf6d0593148576677fc844c1dee7" }
+candle-kernels = { git = "https://github.com/suniastar/candle", rev = "9f8bdd442bdddf6d0593148576677fc844c1dee7" }
+candle-nn = { git = "https://github.com/suniastar/candle", rev = "9f8bdd442bdddf6d0593148576677fc844c1dee7" }
+candle-transformers = { git = "https://github.com/suniastar/candle", rev = "9f8bdd442bdddf6d0593148576677fc844c1dee7" }
+candle-ug = { git = "https://github.com/suniastar/candle", rev = "9f8bdd442bdddf6d0593148576677fc844c1dee7" }

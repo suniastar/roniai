@@ -10,4 +10,4 @@ publish = false
 anyhow = "1.0.102"
 candle-core = { workspace = true, features = ["cuda", "cudnn"] }
 hf-hub = "0.5.0"
-qwen3-tts = { workspace = true, features = ["cuda", "flash-attn"] }
+qwen3-tts = { workspace = true, features = ["cuda"] }

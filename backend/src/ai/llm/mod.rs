@@ -55,7 +55,7 @@ impl LLM {
             (Some(k), None) => Sampling::TopK { k, temperature },
             (Some(k), Some(p)) => Sampling::TopKThenTopP { k, p, temperature },
         };
-        let logits_processor = LogitsProcessor::from_sampling(args.llm_seed() as u64, sampling);
+        let logits_processor = LogitsProcessor::from_sampling(args.seed(), sampling);
         Ok(Self {
             state,
             helix,
