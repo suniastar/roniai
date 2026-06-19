@@ -108,10 +108,10 @@ impl LLM {
                     .unwrap_or(0);
                 logits = apply_repeat_penalty(&logits, self.penalty_repeat, &answer[start_at..])?;
             }
+            next_token = self.logits_processor.sample(&logits)?;
             if next_token == eos_token || index > 512 {
                 break;
             }
-            next_token = self.logits_processor.sample(&logits)?;
             answer.push(next_token);
             if let Ok(t) = tokenizer.decode(&[next_token], false) {
                 print!("{t}");
