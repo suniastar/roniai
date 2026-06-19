@@ -103,7 +103,6 @@ impl WebsocketConnectionThread {
         let url = self.session.url().await;
         info!("connecting to twitch event sub: {url}");
         let (socket, _) = connect_async(&url).await?;
-        self.session.tick_last_seen().await;
         Ok(socket)
     }
 

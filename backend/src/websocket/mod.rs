@@ -60,6 +60,7 @@ impl WebsocketClientThread {
     async fn run(self) -> Result<()> {
         loop {
             let mut conn = WebsocketConnection::start(self.state.clone(), self.session.clone());
+            self.session.tick_last_seen().await;
             while conn.is_running() {
                 let now = Instant::now();
                 let last_seen = self.session.last_seen().await;
